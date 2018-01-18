@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}合同信息{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+<h1><strong>合同信息</strong></h1>
+<br>
+</div>
+<div class="container" >
+<p class="text-left">
+    <strong>合同开始时间段：</strong><input id="start_date2" type="date" value="2017-07-10">&nbsp;
+    <strong> - </strong><input id="end_date2" type="date" value="2017-07-20">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button class="btn btn-primary btn-sm">根据合同开始时间段筛选</button><br><br>
+    <strong>合同结束时间段：</strong><input id="start_date3" type="date" value="2017-07-10">
+    <strong> - </strong><input id="end_date3" type="date" value="2017-07-20">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button class="btn btn-primary btn-sm">根据合同结束时间段筛选</button>
+</p>
+
+<table id="table_Case"  class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>合同号</th>
+            <th>客户ID</th>
+            <th>客户姓名</th>
+            <th>身份证号</th>
+            <th>借款本金</th>
+            <th>合同签订日</th>
+            <th>合同截止日</th>
+            <th>支付开始日</th>
+            <th>借款期数</th>
+            <th>签约次数</th>
+            <th>客户经理</th>
+            <th>风控</th>
+            <th>复审</th>
+            <th>中介</th>
+            <th>所在门店</th>
+            <th>平台费</th>
+            <th>担保费</th>
+            <th>服务费</th>
+            <th>手续费</th>
+            <th>风险金</th>
+        </tr>
+    </thead>
+</table>
+</div>
+
+
+{% endblock %}
+
+{% block style %}
+{{ super() }}
+{#    <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">#}
+    <link rel="stylesheet" type="text/css" href="../static/media/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../static/media/css/dataTables.bootstrap.css">
+
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<!-- jQuery-->
+    <script type="text/javascript" charset="UTF-8" src="../static/media/js/jquery.js"></script>
+<!-- Datatables-->
+    <script type="text/javascript" charset="utf8" src="../static/media/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" charset="utf8" src="../static/media/js/dataTables.bootstrap.js"></script>
+    <!--<script type="text/javascript" charset="UTF-8" src="../static/tables/test/js/test.js"></script>-->
+<script>
+     $(document).ready(function () {
+        $('#table_Case').DataTable(
+            {   "paging": true,
+             "lengthChange": true,
+             "searching": true,
+             "info": true,
+             "destroy":true,
+             "processing":true,
+             "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+             // set the initial value
+             "pageLength": 10,
+              // set first column as a default sort by asc
+             //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+             "deferRender": true,
+                "ajax":{
+                 url:"{{ url_for('main.case_get') }}",
+                    type:"POST",
+                    dataType:'json',
+                 dataSrc:
+                         function(data){
+                           return data;
+                         }
+               },
+                "columns": [{ "sWidth": "14%","class":'text-center'},
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "10%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "5%","class":'text-center'},
+                              { "sWidth": "5%","class":'text-center' },
+                              { "sWidth": "5%","class":'text-center' },
+                              { "sWidth": "5%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                               { "sWidth": "4%","class":'text-center'},
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                                { "sWidth": "4%","class":'text-center'},
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' },
+                              { "sWidth": "4%","class":'text-center' }],
+                 "columnDefs": [
+                      {
+                        "targets": [ 1 ],
+                        "visible": false,
+                        "searchable": false
+                      },
+                      {
+                        "targets": [ 3 ],
+                        "visible": false,
+                          "searchable": false
+                      }
+                    ],
+                "pagingType":   "full_numbers",
+                "oLanguage":    //DataTable中文化 把提示语之类的换成中文
+                            {
+                             "sProcessing": "正在加载中......",
+                             "sLengthMenu": "每页显示 _MENU_ 条记录",
+                             "sZeroRecords": "对不起，查询不到相关数据！",
+                             "sEmptyTable": "表中无数据存在！",
+                             "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                             "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                             "sSearch": "搜索：",
+                             "oPaginate": {
+                                 "sFirst": "首页",
+                                 "sPrevious": "上一页",
+                                 "sNext": "下一页",
+                                 "sLast": "末页"}}
+            }
+        );
+    });
+
+
+</script>
+{% endblock %}

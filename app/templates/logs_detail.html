@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}合同日志信息{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+<h1><strong>合同日志信息</strong></h1>
+<br>
+</div>
+<div class="container" >
+<p class="text-left">
+    <strong>开始时间：</strong><input id="start_date1" type="date" value={% if log_start_date %}
+                                                                                {{ log_start_date }}
+                                                                                {% else %}
+                                                                                '2017-07-10'
+                                                                                {% endif %}>&nbsp;&nbsp;&nbsp;
+    <strong>结束时间：</strong><input id="end_date1" type="date" value={% if log_end_date %}
+                                                                                {{ log_end_date }}
+                                                                                {% else %}
+                                                                                '2017-07-20'
+                                                                                {% endif %}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button class="btn btn-primary btn-sm" onclick="reoload_case_log()">根据时间筛选</button>
+</p>
+<table id="table_CaseLogs"  class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>日期</th>
+            <th>合同号</th>
+            <th>操作</th>
+            <th>操作人</th>
+            <th>关键信息</th>
+        </tr>
+    </thead>
+</table>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block style %}
+{{ super() }}
+{#    <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">#}
+    <link rel="stylesheet" type="text/css" href="../static/media/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../static/media/css/dataTables.bootstrap.css">
+
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<!-- jQuery-->
+    <script type="text/javascript" charset="UTF-8" src="../static/media/js/jquery.js"></script>
+<!-- Datatables-->
+    <script type="text/javascript" charset="utf8" src="../static/media/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" charset="utf8" src="../static/media/js/dataTables.bootstrap.js"></script>
+    <!--<script type="text/javascript" charset="UTF-8" src="../static/tables/test/js/test.js"></script>-->
+<script>
+    var date_data={
+        'index':1,
+        'start_date': $("#start_date1").val(),
+        'end_date': $("#end_date1").val()
+    };
+
+    var CaseLog_table = $('#table_CaseLogs').DataTable(
+            {   "paging": true,
+             "lengthChange": true,
+             "searching": true,
+             "info": true,
+             "destroy":true,
+             "processing":true,
+             "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+             // set the initial value
+             "pageLength": 10,
+              // set first column as a default sort by asc
+             //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                "createdRow": function (row, data, index) {
+                /* 设置表格中的内容居中 */
+                $('td', row).attr("class", "text-center");
+            },
+             "deferRender": true,
+                "ajax":{
+                 url:"{{ url_for('main.caselog_get') }}",
+                    type:"POST",
+                    data:date_data,
+                    dataType:'json',
+                 dataSrc:
+                         function(data){
+                           return data;
+                         }
+               },
+                "columns": [
+                              { "sWidth": "15%","class":'text-center'},
+                              { "sWidth": "25%","class":'text-center' },
+                              { "sWidth": "10%","class":'text-center' },
+                              { "sWidth": "10%","class":'text-center' },
+                              { "sWidth": "40%","class":'text-center' }],
+                "pagingType":   "full_numbers",
+                "oLanguage":    //DataTable中文化 把提示语之类的换成中文
+                            {
+                             "sProcessing": "正在加载中......",
+                             "sLengthMenu": "每页显示 _MENU_ 条记录",
+                             "sZeroRecords": "对不起，查询不到相关数据！",
+                             "sEmptyTable": "表中无数据存在！",
+                             "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                             "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                             "sSearch": "搜索：",
+                             "oPaginate": {
+                                 "sFirst": "首页",
+                                 "sPrevious": "上一页",
+                                 "sNext": "下一页",
+                                 "sLast": "末页"}}
+            }
+        );
+
+
+    function reoload_case_log() {
+
+        var date_data_new = {
+            'index': 1,
+            'start_date': $("#start_date1").val(),
+            'end_date': $("#end_date1").val()
+        };
+
+
+    $(document).ready(function () {
+        $('#table_CaseLogs').DataTable(
+            {    "paging": true,
+                 "lengthChange": true,
+                 "searching": true,
+                 "info": true,
+                 "destroy":true,
+                 "processing":true,
+                 "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+                 // set the initial value
+                 "pageLength": 10,
+                  // set first column as a default sort by asc
+                 //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                 "deferRender": true,
+                "ajax":{
+                 url:"{{ url_for('main.caselog_get') }}",
+                    type:"POST",
+                    data:date_data_new,
+                    dataType:'json',
+                 dataSrc:
+                         function(data){
+                           return data;
+                         }
+               },
+                "aoColumns": [
+                              { "sWidth": "15%","title":"日期" },
+                              { "sWidth": "25%","title":"合同号" },
+                              { "sWidth": "10%","title":"操作" },
+                              { "sWidth": "10%","title":"操作人" },
+                              { "sWidth": "40%","title":"关键信息" }],
+                "pagingType":   "full_numbers",
+                "oLanguage":    //DataTable中文化 把提示语之类的换成中文
+                            {
+                             "sProcessing": "正在加载中......",
+                             "sLengthMenu": "每页显示 _MENU_ 条记录",
+                             "sZeroRecords": "对不起，查询不到相关数据！",
+                             "sEmptyTable": "表中无数据存在！",
+                             "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                             "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                             "sSearch": "搜索：",
+                             "oPaginate": {
+                                 "sFirst": "首页",
+                                 "sPrevious": "上一页",
+                                 "sNext": "下一页",
+                                 "sLast": "末页"}}
+            }
+        );
+    });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,577 @@
+
+{% extends "base.html" %}
+{% block title %}统计信息{% endblock %}
+
+{% block page_content %}
+
+<div class="page-header">
+<h1><strong>统计信息</strong></h1>
+<br>
+</div>
+<div class="container" >
+
+<p class="text-left">
+    <div id="statistic_filter" style="height: 40px">
+    <div id="statistic_index" style="float: left;width: 40%">
+        <strong>统计时间：</strong><input id="statistic_date" type="date" value="2017-09-09">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="statistic_date_end" type="date" value="2017-09-18">
+    </div>
+    <div id="statistic_compare" style="float: left;width: 40%">
+    <strong>对比时间：</strong><input id="compare_date" type="date" value="2017-09-19">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="compare_date_end" type="date" value="2017-09-20">
+    </div>
+    <div class="commend "></div>
+
+    <button class="btn btn-primary btn-sm" onclick="reload_statistic_index()">根据时间筛选</button>
+    </div>
+</p>
+
+
+<div id="penal_row1" style="height: 200px">
+    <div id="penal_row1_rank1" style="width: 25%;float: left">
+    <div class="panel panel-default" style="width: 250px;height: 140px">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>进件总数</strong></h3>
+    </div>
+    <div class="panel-body" >
+        <div style="float: left;text-align: right;width: 50%">
+            <p><strong style="font-size: 20px;text-align: left">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+            <p><strong style="color: grey;font-size: 20px;text-align: left">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong><p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+            <p><a id="jinjian_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+            <p><a id="jinjian_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="penal_row1_rank2" style="width: 25%;float: left">
+    <div class="panel panel-default" style="width: 250px;height: 140px;">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>合同总数</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+            <p><strong style="font-size: 20px;text-align: left">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+            <p><strong style="color: grey;font-size: 20px;text-align: left">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+            <p><a id="hetong_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+            <p><a id="hetong_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="penal_row1_rank3" style="width: 25%;float: left">
+    <div class="panel panel-default"  style="width: 250px;height: 140px">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>放款总额</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+        <p><strong style="font-size: 20px">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        <p><strong style="color: grey;font-size: 20px">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+        <p><a id="loan_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+        <p><a id="loan_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="penal_row1_rank4" style="width: 25%;float: left">
+    <div class="panel panel-default"  style="width: 250px;height: 140px">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>逾期金额</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+        <p><strong style="font-size: 20px">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        <p><strong style="color: grey;font-size: 20px">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+        <p><a id="overtime_now" style="font-size: 20px" onclick="find_detail()">0</a><br></p>
+        <p><a id="overtime_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+<div id="penal_row2" style="height: 200px">
+    <div id="penal_row2_rank1" style="width: 25%;float: left">
+    <div class="panel panel-default" style="width: 250px;height: 140px">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>外催金额</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+        <p><strong style="font-size: 20px">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        <p><strong style="color: grey;font-size: 20px">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+        <p><a id="waicui_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+        <p><a id="waicui_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="penal_row2_rank2" style="width: 25%;float: left">
+    <div class="panel panel-default" style="width: 250px;height: 140px;">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>本金回款率</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+        <p><strong style="font-size: 20px">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        <p><strong style="color: grey;font-size: 20px">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+        <p><a id="principal_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+        <p><a id="principal_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="penal_row2_rank3" style="width: 25%;float: left">
+    <div class="panel panel-default"  style="width: 250px;height: 140px">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>利息还款率</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+        <p><strong style="font-size: 20px">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        <p><strong style="color: grey;font-size: 20px">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+        <p><a id="interest_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+        <p><a id="interest_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="penal_row1_rank4" style="width: 25%;float: left">
+    <div class="panel panel-default"  style="width: 250px;height: 140px">
+    <div class="panel-heading" style="text-align: center">
+        <h3 class="panel-title"><strong>滞纳金及费用还款率</strong></h3>
+    </div>
+    <div class="panel-body" style="text-align: center">
+        <div style="float: left;text-align: right;width: 50%">
+        <p><strong style="font-size: 20px">所选：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        <p><strong style="color: grey;font-size: 20px">对比：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%">
+        <p><a id="fee_now" style="font-size: 20px" onclick="find_detail()">0</a></p>
+        <p><a id="fee_compare" style="color: grey;font-size: 20px" onclick="find_detail_compare()">0</a></p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+</div>
+
+<div class="panel panel-default"  style="height: 200px">
+    <div class="panel-heading" >
+        <h3 class="panel-title">单量数据</h3>
+    </div>
+    <div class="panel-body" style="text-align: center;height: 161px;width: 33%;float: left">
+        <div style="float: left;text-align: right;width: 50%;height: 90%">
+        <p style="text-align: left;font-size: 15px;height: 33%" >首借单量：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        <p style="text-align: left;font-size: 15px;height: 33%" >续借单量：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        <p style="text-align: left;font-size: 15px;height: 33%" >推荐单量：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%;height: 90%">
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_new" onclick="find_detail()">0</a>)</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_renew" onclick="find_detail()">0</a>)</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_recommend" onclick="find_detail()">0</a>)</p>
+        </div>
+    </div>
+    <div class="panel-body" style="text-align: center;height: 161px;width: 33%;float: left">
+        <div style="float: left;text-align: right;width: 50%;height: 90%">
+        <p style="text-align: left;font-size: 15px;height: 33%">正常结清：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">提前结清：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">移交结清：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        </div>
+        <div style="float: left;text-align: center;width: 50%;height: 90%">
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_ontime" onclick="find_detail()">0</a>)</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_advance" onclick="find_detail()">0</a>)</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_turnover" onclick="find_detail()">0</a>)</p>
+        </div>
+    </div>
+    <div class="panel-body" style="text-align: center;height: 161px;width: 33%;float: left">
+        <div style="float: left;text-align: right;width: 50%;height: 90%">
+        <p style="text-align: left;font-size: 15px;height: 33%">逾期单量：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">外催单量：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+        </div>
+        <div style="float: left;text-align: center;width: 50%;height: 90%">
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_overtime" onclick="find_detail()">0</a>)</p>
+        <p style="text-align: left;font-size: 15px;height: 33%">(<a id="count_waicui" onclick="find_detail()">0</a>)</p>
+
+        </div>
+    </div>
+    </div>
+
+</div>
+
+<div class="page-header">
+<h1><strong>分时详细信息</strong></h1>
+<br>
+</div>
+
+<div class="filter" >
+<div class="panel panel-default"  style="width: 100%;height: 100%">
+    <div class="panel-heading" style="text-align: left;height: 45px">
+        <div style="width: 45%;float: left">
+        <strong>统计时间：</strong><input id="statistic_detail_date" type="date" value={{ detail_start_date }}>&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="statistic_detail_date_end" type="date" value={{ detail_end_date }}>
+        </div>
+        <div style="float: left;width: 20%">
+            <strong>显示单位：</strong>
+            <select id="statistic_detail_type" name="statistic_detail_type" class="selectpicker show-menu-arrow" style="width: 100px;height: 25px">
+                                        <option value="1">按日</option>
+                                        <option value="7">按周</option>
+                                        <option value="30">按月</option>
+
+            </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="reload_detail()" style="height: 27px">根据时间筛选</button>
+        <div style="float: right">
+            <strong>自定义表头</strong>
+        </div>
+        </div>
+    </div>
+    <div class="panel-body" style="height:100%;text-align: center;background: whitesmoke">
+
+
+
+<table id="statistic_detail"  class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>日期</th>
+            <th>进件量</th>
+            <th>风控批件量</th>
+            <th>门店拒单率</th>
+            <th>复审批件量</th>
+            <th>审批通过率</th>
+            <th>放款总额</th>
+            <th>首借单量</th>
+            <th>续借单量</th>
+            <th>中介推荐量</th>
+            <th>中介推荐金额</th>
+            <th>有效单量</th>
+            <th>详细</th>
+        </tr>
+    </thead>
+</table>
+
+</div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block style %}
+{{ super() }}
+{#    <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">#}
+    <link rel="stylesheet" type="text/css" href="../static/media/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../static/media/css/dataTables.bootstrap.css">
+
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<!-- jQuery-->
+    <script type="text/javascript" charset="UTF-8" src="../static/media/js/jquery.js"></script>
+<!-- Datatables-->
+    <script type="text/javascript" charset="utf8" src="../static/media/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" charset="utf8" src="../static/media/js/dataTables.bootstrap.js"></script>
+    <!--<script type="text/javascript" charset="UTF-8" src="../static/tables/test/js/test.js"></script>-->
+<script>
+
+    var statistic = {
+          'index':0,
+          'date':$("#statistic_date").val(),
+        'date_end':$("#statistic_date_end").val(),
+          'compare':$("#compare_date").val(),
+        'compare_end':$("#compare_date_end").val(),
+          'long':1
+        };
+    var statistic_detail ={
+        'index':1,
+        'date':$("#statistic_detail_date").val(),
+        'end_date':$("#statistic_detail_date_end").val(),
+        'long':$("#statistic_detail_type").val()
+    };
+
+    $.ajax(
+        {
+            type:"POST",
+            url:"{{ url_for('main.statistic_get') }}",
+            data:statistic,
+            dataType:'json',
+            success:function (data) {
+                $(document).ready(function(e){
+                                            $('#jinjian_now').html(data[0]['jinjian']);
+                                            $('#hetong_now').html(data[0]['hetong']);
+                                            $('#loan_now').html(data[0]['loan']);
+                                            $('#overtime_now').html(data[0]['overtime_amount']);
+                                            $('#waicui_now').html(data[0]['waicui_amount']);
+                                            $('#principal_now').html(data[0]['principal_rate']);
+                                            $('#interest_now').html(data[0]['interest_rate']);
+                                            $('#fee_now').html(data[0]['fee_rate']);
+                                            $('#count_new').html(data[0]['new']);
+                                            $('#count_renew').html(data[0]['renew']);
+                                            $('#count_recommend').html(data[0]['recommend']);
+                                            $('#count_ontime').html(data[0]['ontime']);
+                                            $('#count_advance').html(data[0]['advance']);
+                                            $('#count_overtime').html(data[0]['overtime']);
+                                            $('#count_waicui').html(data[0]['waicui']);
+
+                                            $('#jinjian_compare').html(data[1]['jinjian']);
+                                            $('#hetong_compare').html(data[1]['hetong']);
+                                            $('#loan_compare').html(data[1]['loan']);
+                                            $('#overtime_compare').html(data[1]['overtime_amount']);
+                                            $('#waicui_compare').html(data[1]['waicui_amount']);
+                                            $('#principal_compare').html(data[1]['principal_rate']);
+                                            $('#interest_compare').html(data[1]['interest_rate']);
+                                            $('#fee_compare').html(data[1]['fee_rate']);
+                                        })
+            }
+        });
+
+    var Tale_statistic_detail = $('#statistic_detail').DataTable(
+            {   "paging": true,
+             "lengthChange": true,
+             "searching": true,
+             "info": true,
+             "destroy":true,
+             "processing":true,
+                'ordering':false,
+             "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+             // set the initial value
+             "pageLength": 10,
+              // set first column as a default sort by asc
+             //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                "createdRow": function (row, data, index) {
+                /* 设置表格中的内容居中 */
+                $('td', row).attr("class", "text-center");
+            },
+             "deferRender": true,
+                "ajax":{
+                 url:"{{ url_for('main.statistic_detail_get') }}",
+                    type:"POST",
+                    data:statistic_detail,
+                    dataType:'json',
+                 dataSrc:
+                         function(data){
+                           return data;
+                         }
+               },
+                "columns": [
+                              { "sWidth": "9%","class":'text-center','data':'date'},
+                              { "sWidth": "8%","class":'text-center','data':'jinjian' },
+                              { "sWidth": "8%","class":'text-center','data':'apply_pass' },
+                              { "sWidth": "8%","class":'text-center','data':'apply_rely' },
+                              { "sWidth": "8%","class":'text-center','data':'approve_pass' },
+                                { "sWidth": "8%","class":'text-center','data':'approve_rate'},
+                                { "sWidth": "8%","class":'text-center','data':'loan'},
+                                { "sWidth": "8%","class":'text-center','data':'new'},
+                                { "sWidth": "8%","class":'text-center','data':'renew'},
+                                { "sWidth": "8%","class":'text-center','data':'recommend'},
+                                { "sWidth": "8%","class":'text-center','data':'recommend_amount'},
+                                { "sWidth": "8%","class":'text-center','data':'goods'},
+                                { "sWidth": "8%","class":'text-center','data':null}],
+                "columnDefs": [
+                      {
+                        "targets": [ 11 ],
+                        "visible": false,
+                        "searchable": false
+                      },
+                    {
+                        //   指定第最后一列
+
+                        targets: 12,
+                        render: function(data, type, row, meta) {
+                            var detail_type = $("#statistic_detail_type").val();
+                            return '<button class="btn btn-primary btn-sm" onclick="find_detail_in_row(\''+row.date+'\','+detail_type+')" >详细</button>';}}
+                    ],
+
+                "pagingType":   "full_numbers",
+                "oLanguage":    //DataTable中文化 把提示语之类的换成中文
+                            {
+                             "sProcessing": "正在加载中......",
+                             "sLengthMenu": "每页显示 _MENU_ 条记录",
+                             "sZeroRecords": "对不起，查询不到相关数据！",
+                             "sEmptyTable": "表中无数据存在！",
+                             "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                             "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                             "sSearch": "搜索：",
+                             "oPaginate": {
+                                 "sFirst": "首页",
+                                 "sPrevious": "上一页",
+                                 "sNext": "下一页",
+                                 "sLast": "末页"}}
+            }
+        );
+
+    function reload_statistic_index() {
+        var statistic_new = {
+          'index':0,
+          'date':$("#statistic_date").val(),
+          'date_end':$("#statistic_date_end").val(),
+          'compare':$("#compare_date").val(),
+          'compare_end':$("#compare_date_end").val(),
+          'long':1
+        };
+        $.ajax(
+        {
+            type:"POST",
+            url:"{{ url_for('main.statistic_get') }}",
+            data:statistic_new,
+            dataType:'json',
+            success:function (data) {
+                $(document).ready(function(e){
+                                            $('#jinjian_now').html(data[0]['jinjian']);
+                                            $('#hetong_now').html(data[0]['hetong']);
+                                            $('#loan_now').html(data[0]['loan']);
+                                            $('#overtime_now').html(data[0]['overtime_amount']);
+                                            $('#waicui_now').html(data[0]['waicui_amount']);
+                                            $('#principal_now').html(data[0]['principal_rate']);
+                                            $('#interest_now').html(data[0]['interest_rate']);
+                                            $('#fee_now').html(data[0]['fee_rate']);
+                                            $('#count_new').html(data[0]['new']);
+                                            $('#count_renew').html(data[0]['renew']);
+                                            $('#count_recommend').html(data[0]['recommend']);
+                                            $('#count_ontime').html(data[0]['ontime']);
+                                            $('#count_advance').html(data[0]['advance']);
+                                            $('#count_overtime').html(data[0]['overtime']);
+                                            $('#count_waicui').html(data[0]['waicui']);
+
+                                            $('#jinjian_compare').html(data[1]['jinjian']);
+                                            $('#hetong_compare').html(data[1]['hetong']);
+                                            $('#loan_compare').html(data[1]['loan']);
+                                            $('#overtime_compare').html(data[1]['overtime_amount']);
+                                            $('#waicui_compare').html(data[1]['waicui_amount']);
+                                            $('#principal_compare').html(data[1]['principal_rate']);
+                                            $('#interest_compare').html(data[1]['interest_rate']);
+                                            $('#fee_compare').html(data[1]['fee_rate']);
+                                        })
+            }
+        });
+    }
+
+    function reload_detail() {
+        var statistic_detail_new ={
+        'index':1,
+        'date':$("#statistic_detail_date").val(),
+        'end_date':$("#statistic_detail_date_end").val(),
+        'long':$("#statistic_detail_type").val()
+    };
+        var Tale_statistic_detail = $('#statistic_detail').DataTable(
+            {   "paging": true,
+             "lengthChange": true,
+             "searching": true,
+             "info": true,
+             "destroy":true,
+             "processing":true,
+             "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+             // set the initial value
+             "pageLength": 10,
+              // set first column as a default sort by asc
+             //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                "createdRow": function (row, data, index) {
+                /* 设置表格中的内容居中 */
+                $('td', row).attr("class", "text-center");
+            },
+             "deferRender": true,
+                "ajax":{
+                 url:"{{ url_for('main.statistic_detail_get') }}",
+                    type:"POST",
+                    data:statistic_detail_new,
+                    dataType:'json',
+                 dataSrc:
+                         function(data){
+                           return data;
+                         }
+               },
+                "columns": [
+                              { "sWidth": "9%","class":'text-center','data':'date'},
+                              { "sWidth": "8%","class":'text-center','data':'jinjian' },
+                              { "sWidth": "8%","class":'text-center','data':'apply_pass' },
+                              { "sWidth": "8%","class":'text-center','data':'apply_rely' },
+                              { "sWidth": "8%","class":'text-center','data':'approve_pass' },
+                                { "sWidth": "8%","class":'text-center','data':'approve_rate'},
+                                { "sWidth": "8%","class":'text-center','data':'loan'},
+                                { "sWidth": "8%","class":'text-center','data':'new'},
+                                { "sWidth": "8%","class":'text-center','data':'renew'},
+                                { "sWidth": "8%","class":'text-center','data':'recommend'},
+                                { "sWidth": "8%","class":'text-center','data':'recommend_amount'},
+                                { "sWidth": "8%","class":'text-center','data':'goods'},
+                                { "sWidth": "8%","class":'text-center','data':null}],
+                "columnDefs": [
+                      {
+                        "targets": [ 11 ],
+                        "visible": false,
+                        "searchable": false
+                      },
+                     {
+                        //   指定第最后一列
+
+                        targets: 12,
+                        render: function(data, type, row, meta) {
+                            var detail_type = $("#statistic_detail_type").val();
+                            return '<button class="btn btn-primary btn-sm" onclick="find_detail_in_row(\''+row.date+'\','+detail_type+')" >详细</button>';}}
+                    ],
+                "pagingType":   "full_numbers",
+                "oLanguage":    //DataTable中文化 把提示语之类的换成中文
+                            {
+                             "sProcessing": "正在加载中......",
+                             "sLengthMenu": "每页显示 _MENU_ 条记录",
+                             "sZeroRecords": "对不起，查询不到相关数据！",
+                             "sEmptyTable": "表中无数据存在！",
+                             "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                             "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                             "sSearch": "搜索：",
+                             "oPaginate": {
+                                 "sFirst": "首页",
+                                 "sPrevious": "上一页",
+                                 "sNext": "下一页",
+                                 "sLast": "末页"}}
+            }
+        );
+
+    }
+
+    function find_detail() {
+        var args = "start_date="+$("#statistic_date").val()+"&end_date="+$("#statistic_date_end").val();
+        window.open("/detail?"+args);
+    }
+
+
+    function find_detail_compare() {
+        var args = "start_date="+$("#compare_date").val()+"&end_date="+$("#compare_date_end").val();
+        window.open("/detail?"+args);
+    }
+
+    function find_detail_in_row(date,type) {
+        $.ajax(
+        {
+            type:"POST",
+            url:"{{ url_for('main.find_detail_in_row') }}",
+            data:{'date':date,'type':type},
+            dataType:'json',
+            success:function (data) {
+                var args = "start_date="+data.start_date+"&end_date="+data.end_date;
+                window.open("/detail?"+args);
+            }
+        })
+    }
+</script>
+    {% endblock %}
