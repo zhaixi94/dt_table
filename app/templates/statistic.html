@@ -10,6 +10,15 @@
 </div>
 <div class="container" >
 
+<div>
+    {% if shop %}
+    <h2><strong>{{ shop['shop_name'] }}</strong></h2>
+        <input value="{{ shop['shop_id'] }}" readonly="readonly" id="shop" style="visibility: hidden">
+        {% else %}
+        <input value="0" readonly="readonly" id="shop" style="visibility: hidden">
+    {% endif %}
+</div>
+
 <p class="text-left">
     <div id="statistic_filter" style="height: 40px">
     <div id="statistic_index" style="float: left;width: 40%">
@@ -224,6 +233,12 @@
 <br>
 </div>
 
+<div>
+    {% if shop %}
+    <h2><strong>{{ shop['shop_name'] }}</strong></h2>
+    {% endif %}
+</div>
+
 <div class="filter" >
 <div class="panel panel-default"  style="width: 100%;height: 100%">
     <div class="panel-heading" style="text-align: left;height: 45px">
@@ -301,13 +316,15 @@
         'date_end':$("#statistic_date_end").val(),
           'compare':$("#compare_date").val(),
         'compare_end':$("#compare_date_end").val(),
+        'shop':$("#shop").val(),
           'long':1
         };
     var statistic_detail ={
         'index':1,
         'date':$("#statistic_detail_date").val(),
         'end_date':$("#statistic_detail_date_end").val(),
-        'long':$("#statistic_detail_type").val()
+        'long':$("#statistic_detail_type").val(),
+        'shop':$("#shop").val()
     };
 
     $.ajax(
@@ -428,6 +445,7 @@
           'date_end':$("#statistic_date_end").val(),
           'compare':$("#compare_date").val(),
           'compare_end':$("#compare_date_end").val(),
+            'shop':$("#shop").val(),
           'long':1
         };
         $.ajax(
@@ -472,7 +490,8 @@
         'index':1,
         'date':$("#statistic_detail_date").val(),
         'end_date':$("#statistic_detail_date_end").val(),
-        'long':$("#statistic_detail_type").val()
+        'long':$("#statistic_detail_type").val(),
+           'shop':$("#shop").val()
     };
         var Tale_statistic_detail = $('#statistic_detail').DataTable(
             {   "paging": true,

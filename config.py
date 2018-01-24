@@ -14,15 +14,20 @@ class DevConfig(Config):
     DEBUG=False
     SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:zx1994617@127.0.0.1:3306/testsql?charset=utf8'
     SQLALCHEMY_TRACK_MODIFICATIONS=True
-    MONGODB_SETTINGS = {'db':'Datatable','alias':'default'}
-    # MONGODB_SETTINGS = {'db':'Datatable','host': '192.168.98.133', 'port': 27017}
+    # MONGODB_SETTINGS = {'db':'Datatable','alias':'default'}
+    MONGODB_SETTINGS = {'db':'Datatable','host': '192.168.98.133', 'port': 27017}
     JOBS = [
         {
             'id': 'createschuler_job',
-            'func': 'app.main.mongo_service:test',
+            'func': 'app:data_profile',
             'args': None,
-            'trigger': 'interval',
-            'seconds': 60
+            'trigger': {
+                    'type': 'cron',
+                    'day_of_week':"mon-sun",
+                    'hour':'1',
+                    'minute':'0',
+                    'second': '0'
+                }  ,
         }
     ]
 

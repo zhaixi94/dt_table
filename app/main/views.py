@@ -31,9 +31,19 @@ def index():
 #统计信息表
 @main.route('/statistic',methods=['GET','POST'])
 def statistic():
+    shop_get = request.args.get('shop')
+    date = request.args.get('date')
+    print(date)
+    shop_list = json.loads(red.get('shop_data').decode())
+    shop = None
+    for shop_id in shop_list:
+        if shop_list[shop_id] == shop_get:
+            shop = {'shop_name':shop_get,'shop_id':shop_id}
+            break
+
     detail_start_date = '2017-07-15'
     detail_end_date = '2017-09-15'
-    return render_template('statistic.html',detail_start_date=detail_start_date,detail_end_date=detail_end_date)
+    return render_template('statistic.html',detail_start_date=detail_start_date,detail_end_date=detail_end_date,shop = shop)
 
 #详细信息表
 @main.route('/detail',methods=['GET','POST'])
@@ -44,7 +54,6 @@ def detail():
 
 #门店信息表
 @main.route('/shop',methods = ['GET','POST'])
-
 def shop():
     return render_template('shop.html')
 
@@ -68,6 +77,11 @@ def recommend():
 def apply():
     shop_list = json.loads(red.get('shop_data').decode())
     return render_template('apply.html',shop_list = shop_list)
+
+
+@main.route("/merit",methods = ['GET','POST'])
+def merit():
+    return render_template('merit.html')
 
 #合同日志信息表返回函数
 @main.route("/caselog_get",methods=['GET','POST'])
@@ -96,9 +110,10 @@ def statistic_get():
     if int(index) ==0:
         date,date_end = request.form.get('date'),request.form.get('date_end')
         compare_date,compare_date_end = request.form.get('compare'),request.form.get("compare_end")
-        print(date,date_end,compare_date,compare_date_end)
+        shop_get = request.form.get("shop")
+        print(date,date_end,compare_date,compare_date_end,shop_get)
         table =TableExcute()
-        dataitems = table.Statistic_index(statistic_date=date,statistic_date_end=date_end,compare_date = compare_date,compare_date_end=compare_date_end)
+        dataitems = table.Statistic_index(statistic_date=date,statistic_date_end=date_end,compare_date = compare_date,compare_date_end=compare_date_end,shop_get=shop_get)
         return jsonify(dataitems)
 
 
@@ -106,8 +121,9 @@ def statistic_get():
 @main.route("/statistic_detail_get",methods = ['POST'])
 def statistic_detail_get():
     date,end_date,type = request.form.get('date'),request.form.get('end_date'),request.form.get('long')
+    shop_get = request.form.get('shop')
     table = TableExcute()
-    dataitems = table.Statistic_detail(date,end_date,type)
+    dataitems = table.Statistic_detail(date,end_date,type,shop_get)
     return jsonify(dataitems)
 
 #门店基本信息返回表
@@ -145,9 +161,20 @@ def recommend_data():
 #风控信息
 @main.route("/apply/data",methods = ['GET','POST'])
 def apply_data():
+    date, end_date,shop_id = request.form.get('date'), request.form.get('end_date'),request.form.get('shop_id')
+    print(shop_id)
     table=TableExcute()
-    data_items = table.apply_by_shop()
+    data_items = table.apply_by_shop(date,end_date,shop_id)
     return jsonify(data_items)
+
+#绩效数据
+@main.route("/merit/data",methods = ['GET','POST'])
+def merit_data():
+    date, end_date = request.form.get('date'), request.form.get('end_date')
+    table = TableExcute()
+    data_items = table.merit_by_person(date,end_date)
+    return jsonify(data_items)
+
 
 
 #返回详细页面

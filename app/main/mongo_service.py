@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-from app.main.sqlhelper import find_all_case,Find_all_verify_messege,Find_all_loan_message,Find_all_overtime_message,Find_all_daihuan_message,Find_all_inadvance_message,Find_all_refund_message
+from app.main.sqlhelper import find_all_case,Find_all_verify_messege,Find_all_loan_message,Find_all_overtime_message,Find_all_daihuan_message,Find_all_inadvance_message,Find_all_refund_message,find_normal_cases,find_the_first_day
 from app.models import Case,CaseLogs,ErrorLogs
 from .sqlhelper import is_first_case
-import datetime
+import datetime,time
 import numpy as np
 from mongoengine.queryset.visitor import Q
 from collections import defaultdict
@@ -37,6 +37,7 @@ class MyMongo_executive(object):
             newcase.risk_manager_name = case['risk_manager_name']
             newcase.approver = case['approver']
             newcase.approve_time = case['approve_time']
+            newcase.approve_status=None
             newcase.card_name = None
             newcase.shop_id = case['shop_id']
             newcase.plateform_fee = case['platform_fee']
@@ -44,9 +45,10 @@ class MyMongo_executive(object):
             newcase.service_fee1 = case['service_fee1']
             newcase.service_fee2 = case['service_fee2']
             newcase.risk_fee = case['risk_fee']
-            newcase.case_status = 0
+            newcase.case_status = []
             newcase.status_code = case['status']
             newcase.recommend_name = case['real_name']
+            newcase.recommend_fee = case['referral_fee']
             newcase.logs = {'chushen': [], 'fushen': [], 'loan': [], 'diancui': [], 'waicui': [], 'daihuan_apply': [],
                             'daihuan_approve': [], 'inadvance_apply': [], 'inadvance_approve': [], 'refund': [],
                             'end': [], 'payment': []}
@@ -55,8 +57,14 @@ class MyMongo_executive(object):
         case_data = find_all_case(start_date=start_date, end_date=end_date)
         if case_data:
             thread_list = list(threading.Thread(target=struct_case,args=(case,)) for case in case_data)
-            for thread in thread_list:thread.start()
-            for thread in thread_list:thread.join()
+            i = 1
+            for thread in thread_list:
+                thread.start()
+                i+=1
+                if i%50==0:time.sleep(3)
+
+            for thread in thread_list:
+                thread.join()
 
 
     #生成器返回
@@ -150,7 +158,7 @@ class MyMongo_executive(object):
             date_obj.save()
             start_date += datetime.timedelta(days=1)
         # 将日志信息首先加入至已创建的合同表中
-        self.insert_infomation_to_case(event_dict)
+        self.update_infomation_to_case(event_dict)
         return stop_date
 
     #信息生成器
@@ -166,6 +174,8 @@ class MyMongo_executive(object):
         while i < len(data):
             if data[i][index] and self.Date_To_Datetime(data[i][index])<= compare_date:
                 events.append(data[i])
+                i+=1
+            elif not data[i][index]:
                 i+=1
             else:
                 yield events
@@ -190,11 +200,23 @@ class MyMongo_executive(object):
 
         def fushen_case(case):
             dic = {}
-            if case['approve_rst'] == 'AR' and case['apply_state'] == 'A2':
+            if case['approve_rst'] == 'AR':
+                if case['back_count']==0:
+                    rely = 0
+                    dic['date'], dic['case_id'], dic['behave'], dic['manipulator'], dic['message'], dic[
+                        'shop_id'] = case['approve_time'], \
+                                       case['apply_sn'], "复审审批", case['approver'], "通过", case['shop_id']
+                else:
+                    rely = 0
+                    dic['date'], dic['case_id'], dic['behave'], dic['manipulator'], dic['message'], dic[
+                        'shop_id'] = case['approve_time'], \
+                                     case['apply_sn'], "复审审批", case['approver'], "退单通过", case['shop_id']
+
+            elif case['apply_state']=='A5' and case['back_count']>0:
                 rely = 0
                 dic['date'], dic['case_id'], dic['behave'], dic['manipulator'], dic['message'], dic[
                     'shop_id'] = case['approve_time'], \
-                                   case['apply_sn'], "复审审批", case['approver'], "通过", case['shop_id']
+                                 case['apply_sn'], "复审审批", case['approver'], "退单", case['shop_id']
             else:
                 rely = 1
                 dic['date'], dic['case_id'], dic['behave'], dic['manipulator'], dic['message'], dic[
@@ -359,7 +381,9 @@ class MyMongo_executive(object):
         return event_dic
 
     #合同更新
-    def insert_infomation_to_case(self,event_dict):
+    def update_infomation_to_case(self,event_dict):
+
+
         def insert(case_id,behave_list):
             case_data = Case.objects(case_id=case_id).first()
             if case_data:
@@ -381,6 +405,7 @@ class MyMongo_executive(object):
 
 
 
+
     #记录错误日志
     def insert_erro_log(self,logstring):
         now = datetime.datetime.now()
@@ -394,12 +419,17 @@ class MyMongo_executive(object):
         if case.logs['refund'] and int(case.logs['refund'][-1]['message']['期数']) == int(case.case_tenor):
             case.logs['end'] = [{'date':case.logs['refund'][-1]['date'],'case_id':case.case_id,'behave':'合同结束','manipulator':'','message':'','life_flag':0}]
 
-        if not case.approve_time and case.logs['fushen']:#如果原本没有复审时间，加入复审时间
-            case.approve_time = case.logs['fushen'][0]['date']
+        if  case.logs['fushen']:
+            if case.approve_time :#如果原本没有复审时间，加入复审时间
+                case.approve_time = case.logs['fushen'][0]['date']
+            if not case.approve_status or case.approve_status !=case.logs['fushen'][0]['message']:#如果原来没有复审状态，加上复审状态
+                case.approve_status = case.logs['fushen'][0]['message']
+
 
         if (not case.payment_date and case.logs['refund']) or (case.logs['refund'] and case.payment_date<case.logs['refund'][-1]['message']['本期应还时间']):#更新本期应还时间
             case.payment_date = case.logs['refund'][-1]['message']['本期应还时间']
-        status = len(case.logs['fushen'])*(10**0)+len(case.logs['loan'])*(10**1)+len(case.logs['diancui'])*(10**2)+len(case.logs['waicui'])*(10**4)+len(case.logs['end'])*(10**10)
+        status = [len(case.logs['chushen']),len(case.logs['fushen']),len(case.logs['loan']),len(case.logs['refund']),len(case.logs['daihuan_apply']),len(case.logs['daihuan_approve']),
+                  len(case.logs['inadvance_apply']),len(case.logs['inadvance_approve']),len(case.logs['payment']),len(case.logs['diancui']),len(case.logs['waicui']),len(case.logs['end'])]
         case.case_status = status
         return case
 
@@ -424,7 +454,6 @@ class MyMongo_executive(object):
             return dic
 
 
-
     def test(self,startdate,enddate):
         now  = datetime.datetime.now()
         loan_data = Find_all_loan_message(startdate, now)  # 放款信息
@@ -432,15 +461,47 @@ class MyMongo_executive(object):
         while True:
             print(loan_events.__next__())
 
+    #退单合同检查更新
+    def approve_cases_update(self):
+        retry_cases = Case.objects(approve_status='退单通过').all()
+        retry_cases_id = list(case.case_id for case in retry_cases)
+        retry_cases_info = find_normal_cases(retry_cases_id)
+        event_list, rely = self.built_verify_events_message(retry_cases_info, is_chushen=False)
+        logs_data = CaseLogs.objects(date_string=datetime.datetime.now().strftime("%Y-%m-%d")).first()
+
+        for case in retry_cases:
+            for case_info in event_list:
+                if case.case_id == case_info['case_id']:
+                    if case.approve_time != case_info['date']:
+                        case.approve_time = case_info['date']
+                    if case.approve_status != case_info['message']:
+                        case.approve_status = case_info['message']
+                        case.logs['fushen'].append(case_info)
+                        logs_data.events['fushen'].append(case_info)
+            case.save()
+
+
+
 def test():
     print('test')
 
+
 def timeily_quest():
-    end_date = datetime.datetime.now()
-    start_date = end_date - datetime.timedelta(days=1)
+    now = datetime.datetime.now()
+    now = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday = now - datetime.timedelta(days=1)
+    mymon = MyMongo_executive()
+    mymon.Case_init(start_date=yesterday, end_date=now)
+    mymon.CaseLog_inti_(start_date=yesterday, end_date=now)
+    mymon.approve_cases_update()
+
+def db_init():
+    start_date = find_the_first_day()['create_time'].replace(hour=0, minute=0, second=0, microsecond=0)
+    now = datetime.datetime.now()
     mymon = MyMongo_executive()
     mymon.Case_init(start_date)
     mymon.CaseLog_inti_(start_date)
+    print(datetime.datetime.now() - now)
 
 
 # startdate=datetime.datetime(2017,7,10,0,0,0)

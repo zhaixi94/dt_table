@@ -30,44 +30,62 @@ def data_profile():
     cases = Case.objects().all()
     print('Loading....')
 
+    #日志信息按月存入redis
     log_list = list(event for date in date_list
                     for behave in date.events
                     for event in date.events[behave])
     logs_data = pd.DataFrame(log_list)
+    dates = sorted(logs_data['date'])
+    date_final = dates[len(dates) - 1]
+    date_first = dates[0]
+
+    #将日志范围存入redis
+    # date_range = {'date_first':date_first,'date_final':date_final}
+    # red.set('date_range', json.dumps(date_range))
+    red.set('logs_data',DataFrame(logs_data).to_msgpack(compress='zlib'))
+    # event_dict = {}
+    # for year in range(date_first.year, date_final.year + 1):
+    #     if year == date_first.year and year != date_final.year:
+    #         for month in range(date_first.month, 13):
+    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
+    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
+    #     elif year == date_first.year and year == date_final.year:
+    #         for month in range(date_first.month, date_final.month + 1):
+    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
+    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
+    #         break
+    #     elif year != date_final.year:
+    #         for month in range(1, 13):
+    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
+    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
+    #     else:
+    #         for month in range(1, date_final.month + 1):
+    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
+    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
+
+    # for date in event_dict:
+    #     red.set(date, DataFrame(event_dict[date]).to_msgpack(compress='zlib'))
     print('Logs Data Complete')
 
+    #合同信息存入redis
     infolist = list(
-        [case.case_id, case.case_status, float(case.amount) if case.amount else 0.0, case.risk_manager_name,case.status_code,case.recommend_name,float(case.recommend_fee) if case.recommend_fee else 0.0,case.is_renew_case,] for case in
+        [case.case_id, case.case_status, float(case.amount) if case.amount else 0.0, float(case.loan_amount) if case.loan_amount else 0.0,case.sale_name,case.status_code,case.recommend_name,float(case.recommend_fee) if case.recommend_fee else 0.0,case.is_renew_case,] for case in
         cases)
     case_data = DataFrame(infolist)
-    case_data.columns = ['case_id', 'status', 'amount', 'risk_manager_name', 'status_code','recommend_name','recommend_fee','is_renew_case']
+    case_data.columns = ['case_id', 'status', 'amount', 'loan_amount','sale_name', 'status_code','recommend_name','recommend_fee','is_renew_case']
     case_data = case_data[~case_data['case_id'].isnull()]
+    red.set('case_data', DataFrame(case_data).to_msgpack(compress='zlib'))
     print('Case Data Complete')
 
-
+    #门店信息存入js
     shop_data = find_shop()  # 查询所有门店的名称
     shop_reflect = {}
     for shop_info in shop_data:
         shop_reflect[int(shop_info['id'])] = shop_info['abbreviation']
     shop_reflect.pop(7)  # 将测试门店除去
     shop=json.dumps(shop_reflect)
-    print('Shop Data complete')
-
-    # entire_data = pd.merge(logs_data,case_data,how='left',on='case_id')
-    red.set('logs_data', DataFrame(logs_data).to_msgpack(compress='zlib'))
-    red.set('case_data', DataFrame(case_data).to_msgpack(compress='zlib'))
     red.set('shop_data', shop)
-
-#定时任务
-def clock():
-    while True:
-        now = datetime.datetime.now()
-        if  now.hour!=0 and now.minute!=0:
-            print(now.strftime('%Y-%m-%d %H:%M:%S'))
-            time.sleep(1)
-        else:
-            pass
-
+    print('Shop Data complete')
 
 
 

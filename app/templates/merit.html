@@ -1,38 +1,20 @@
 {% extends "base.html" %}
-{% block title %}风控信息{% endblock %}
+{% block title %}业务员绩效信息{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
-<h1><strong>风控信息表</strong></h1>
-<br>
-{##}
-{#<div>#}
-{#    {% for shop_id in shop_list %}#}
-{#    <label class="checkbox-inline">#}
-{#        <input type="checkbox" id="inlineCheckbox1" value={{ shop_id }}> {{ shop_list[shop_id] }}#}
-{#    </label>#}
-{#    {% endfor %}#}
-{#</div>#}
+<h1><strong>业务员绩效信息</strong></h1>
+</div><br>
 
-</div>
 
-    <div class="filter" >
+<div class="filter" >
 <div class="panel panel-default"  style="width: 100%;height: 100%">
     <div class="panel-heading" style="text-align: left;height: 45px">
         <div style="width: 45%;float: left">
-        <strong>统计时间：</strong><input id="apply_date" type="date" value="2017-07-10">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="apply_date_end" type="date" value="2017-08-15">
-        </div>
-        <div style="width: 20%;float: left">
-            <strong>门店：</strong>
-            <select style="height: 25px" id="shop_id">
-                <option value="0">全部门店</option>
-                {% for shop_id in shop_list %}
-                <option value="{{ shop_id }}">{{ shop_list[shop_id] }}</option>
-                {% endfor %}
-            </select>
+        <strong>统计时间：</strong><input id="merit_date" type="date" value="2017-07-10">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="merit_date_end" type="date" value="2017-08-15">
         </div>
 
-        <button class="btn btn-primary btn-sm" onclick="reload_apply()" style="height: 27px">筛选</button>
+        <button class="btn btn-primary btn-sm" onclick="reload_merit()" style="height: 27px">根据时间筛选</button>
         <div style="float: right">
             <strong>自定义表头</strong>
         </div>
@@ -40,28 +22,20 @@
     </div>
     <div class="panel-body" style="height:100%;text-align: center;background: whitesmoke">
 
-<table id="apply_info"  class="table table-striped table-bordered">
+<table id="merit_info"  class="table table-striped table-bordered">
     <thead>
         <tr>
             <th>日期</th>
-            <th>风控</th>
+            <th>业务员</th>
             <th>所在门店</th>
-            <th>进件量</th>
-            <th>风控批件量</th>
-            <th>复审批件量</th>
-            <th>风控拒单率</th>
-            <th>审批通过率</th>
-            <th>信息不全退单量</th>
-            <th>退单修改率</th>
-            <th>外催单量</th>
-            <th>外催金额</th>
+            <th>有效单量</th>
+            <th>绩效</th>
         </tr>
     </thead>
 </table>
 
     </div>
 </div>
-
 {% endblock %}
 
 {% block style %}
@@ -71,6 +45,7 @@
     <link rel="stylesheet" type="text/css" href="../static/media/css/dataTables.bootstrap.css">
 
 {% endblock %}
+
 
 {% block scripts %}
 {{ super() }}
@@ -82,13 +57,12 @@
     <!--<script type="text/javascript" charset="UTF-8" src="../static/tables/test/js/test.js"></script>-->
 
 <script>
-    var date = {
-        'date':$("#apply_date").val(),
-        'end_date':$("#apply_date_end").val(),
-        'shop_id':$("#shop_id").val()
+     var date = {
+        'date':$("#merit_date").val(),
+        'end_date':$("#merit_date_end").val()
     };
 
-     var approve_detail = $('#apply_info').DataTable(
+     var merit_detail = $('#merit_info').DataTable(
             {   "paging": true,
              "lengthChange": true,
              "searching": true,
@@ -106,7 +80,7 @@
             },
              "deferRender": true,
                 "ajax":{
-                 url:"{{ url_for('main.apply_data') }}",
+                 url:"{{ url_for('main.merit_data') }}",
                     type:"POST",
                     data:date,
                     dataType:'json',
@@ -116,18 +90,11 @@
                          }
                },
                 "columns": [
-                              { "sWidth": "9%","class":'text-center','data':'date'},
-                                { "sWidth": "7%","class":'text-center','data':'data_name'},
-                                { "sWidth": "7%","class":'text-center','data':'shop_name'},
-                              { "sWidth": "7%","class":'text-center','data':'jinjian' },
-                              { "sWidth": "7%","class":'text-center','data':'apply_su_num' },
-                              { "sWidth": "7%","class":'text-center','data':'approve_success_num' },
-                              { "sWidth": "7%","class":'text-center','data':'approve_dely_rate' },
-                                { "sWidth": "8%","class":'text-center','data':'approve_rate'},
-                                { "sWidth": "8%","class":'text-center','data':'approve_retry'},
-                                { "sWidth": "7%","class":'text-center','data':'approve_retry_rate'},
-                                { "sWidth": "7%","class":'text-center','data':'waicui_num'},
-                                { "sWidth": "7%","class":'text-center','data':'waicui_amount'}],
+                              { "sWidth": "20%","class":'text-center','data':'date'},
+                                { "sWidth": "20%","class":'text-center','data':'data_name'},
+                                { "sWidth": "20%","class":'text-center','data':'shop_name'},
+                              { "sWidth": "20%","class":'text-center','data':'goods' },
+                              { "sWidth": "20%","class":'text-center','data':'merit_pay' }],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
                             {
@@ -146,14 +113,13 @@
             }
         );
 
-     function reload_apply() {
+     function reload_merit() {
          var date_new = {
-        'date':$("#apply_date").val(),
-        'end_date':$("#apply_date_end").val(),
-             'shop_id':$("#shop_id").val()
+        'date':$("#merit_date").val(),
+        'end_date':$("#merit_date_end").val()
     };
 
-     var approve_detail = $('#apply_info').DataTable(
+     var merit_detail = $('#merit_info').DataTable(
             {   "paging": true,
              "lengthChange": true,
              "searching": true,
@@ -171,7 +137,7 @@
             },
              "deferRender": true,
                 "ajax":{
-                 url:"{{ url_for('main.apply_data') }}",
+                 url:"{{ url_for('main.merit_data') }}",
                     type:"POST",
                     data:date_new,
                     dataType:'json',
@@ -181,18 +147,11 @@
                          }
                },
                 "columns": [
-                              { "sWidth": "9%","class":'text-center','data':'date'},
-                                { "sWidth": "7%","class":'text-center','data':'data_name'},
-                                { "sWidth": "7%","class":'text-center','data':'shop_name'},
-                              { "sWidth": "7%","class":'text-center','data':'jinjian' },
-                              { "sWidth": "7%","class":'text-center','data':'apply_su_num' },
-                              { "sWidth": "7%","class":'text-center','data':'approve_success_num' },
-                              { "sWidth": "7%","class":'text-center','data':'approve_dely_rate' },
-                                { "sWidth": "8%","class":'text-center','data':'approve_rate'},
-                                { "sWidth": "8%","class":'text-center','data':'approve_retry'},
-                                { "sWidth": "7%","class":'text-center','data':'approve_retry_rate'},
-                                { "sWidth": "7%","class":'text-center','data':'waicui_num'},
-                                { "sWidth": "7%","class":'text-center','data':'waicui_amount'}],
+                              { "sWidth": "20%","class":'text-center','data':'date'},
+                                { "sWidth": "20%","class":'text-center','data':'data_name'},
+                                { "sWidth": "20%","class":'text-center','data':'shop_name'},
+                              { "sWidth": "20%","class":'text-center','data':'goods' },
+                              { "sWidth": "20%","class":'text-center','data':'merit_pay' }],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
                             {
@@ -212,4 +171,5 @@
         );
      }
 </script>
+
 {% endblock %}

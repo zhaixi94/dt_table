@@ -40,13 +40,13 @@
             <th>中介推荐量</th>
             <th>中介推荐金额</th>
             <th>有效单量</th>
+            <th>门店绩效</th>
         </tr>
     </thead>
 </table>
 
     </div>
 </div>
-
 {% endblock %}
 
 {% block style %}
@@ -114,13 +114,20 @@
                                 { "sWidth": "7%","class":'text-center','data':'renew'},
                                 { "sWidth": "7%","class":'text-center','data':'recommend'},
                                 { "sWidth": "8%","class":'text-center','data':'recommend_amount'},
-                                { "sWidth": "7%","class":'text-center','data':'goods'}],
+                                { "sWidth": "7%","class":'text-center','data':'goods'},
+                                { "sWidth": "7%","class":'text-center','data':'merit_pay'}],
                 "columnDefs": [
                       {
                         "targets": [ 11 ],
                         "visible": false,
                         "searchable": false
-                      }
+                      },
+                    {
+                        //   指定第二列(门店)
+
+                        targets: 1,
+                        render: function(data, type, row, meta) {
+                            return '<a onclick="find_shop_statistic(\''+row.data_name+'\')" >'+data+'</a>';}}
                     ],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
@@ -187,13 +194,20 @@
                                 { "sWidth": "7%","class":'text-center','data':'renew'},
                                 { "sWidth": "7%","class":'text-center','data':'recommend'},
                                 { "sWidth": "8%","class":'text-center','data':'recommend_amount'},
-                                { "sWidth": "7%","class":'text-center','data':'goods'}],
+                                { "sWidth": "7%","class":'text-center','data':'goods'},
+                                { "sWidth": "7%","class":'text-center','data':'merit_pay'}],
                 "columnDefs": [
                       {
                         "targets": [ 11 ],
                         "visible": false,
                         "searchable": false
-                      }
+                      },
+                    {
+                        //   指定第最后一列
+
+                        targets: 0,
+                        render: function(data, type, row, meta) {
+                            return '<a onclick="find_shop_statistic(\''+row.data_name+'\')" >'+data+'</a>';}}
                     ],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
@@ -212,6 +226,9 @@
                                  "sLast": "末页"}}
             }
         );
+    }
+    function find_shop_statistic(shop) {
+        window.open("/statistic?shop="+shop)
     }
  </script>
 {% endblock %}

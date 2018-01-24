@@ -76,6 +76,7 @@ class Case(mdb.Document):
     ic_number = mdb.StringField()
     is_renew_case = mdb.IntField()
     amount = mdb.DecimalField()
+    loan_amount = mdb.DecimalField()  # 放款数量
     start_date = mdb.DateTimeField()
     end_date = mdb.DateTimeField()
     pay_date = mdb.DateTimeField()
@@ -94,31 +95,27 @@ class Case(mdb.Document):
     service_fee2 = mdb.DecimalField()
     risk_fee = mdb.DecimalField()
     payment_date = mdb.DateTimeField()#本期应还时间
-    case_status = mdb.ListField()  # [初审,复审,放款,还款,代还申请,代还批复,提前还清申请,提前还清批复,到期提醒,电催,外催,结束]
+    case_status = mdb.ListField()#[初审,复审,放款,还款,代还申请,代还批复,提前还清申请,提前还清批复,到期提醒,电催,外催,结束]
     status_code = mdb.StringField()
     recommend_name = mdb.StringField()
-    recommend_fee = mdb.DecimalField()  # 中介费
+    recommend_fee = mdb.DecimalField()#中介费
     logs = mdb.DictField()
 
     def __repr__(self):
         return '<Case %s>'%self.case_id
 
-#合同日志表
 class CaseLogs(mdb.Document):
     date = mdb.DateTimeField()
-    date_string = mdb.StringField()  # 时间段
+    date_string = mdb.StringField()#时间段
     events_matrix = mdb.ListField()
-    events = mdb.ListField()
+    events = mdb.DictField()
 
     def __repr__(self):
-        return '<Caselogs %s>' % self.date.strftime('%Y-%m-%d')
+        return '<Caselogs %s>'%self.date.strftime('%Y-%m-%d')
 
 class ErrorLogs(mdb.Document):
     date = mdb.DateTimeField()
     error = mdb.StringField()
-
-def __repr__(self):
-    return "<User %s>"%self.username
 
 @login_manager.user_loader
 def load_user(user_id):

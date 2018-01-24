@@ -5,10 +5,10 @@ import MySQLdb
 import MySQLdb.cursors
 
 def get_conn():
-    host='192.168.98.133'
-    username='root'
-    passwd='1qaz2WSX!@'
-    db='consumerfin7'
+    host = '192.168.99.152'
+    username = 'root'
+    passwd = 'root'
+    db = 'consumerfin11'
     port=3306
     conn=MySQLdb.connect(host=host,port=port,user=username,passwd=passwd,db=db,charset='utf8',cursorclass=MySQLdb.cursors.DictCursor)
     return conn
@@ -55,7 +55,7 @@ def Insert(func):
 #查找所有合同表字段
 @SearchAll
 def find_all_case(start_date,end_date):
-    sql='''SELECT case_basic.create_time,apply_sn,amount,case_basic.customer_id,start_date,end_date,tenor,case_basic.shop_id,guarantor_fee,platform_fee,service_fee1,service_fee2,risk_fee,case_basic.`status`,mp_customer_basic_info.customer_name,ic_number,cm_app_consumptioninst.SALES_NAME,risk_manager_name,cm_app_case.approve_time,approver,sys_get_customer_act.real_name
+    sql='''SELECT case_basic.create_time,apply_sn,amount,case_basic.customer_id,start_date,end_date,tenor,case_basic.shop_id,guarantor_fee,platform_fee,service_fee1,service_fee2,risk_fee,case_basic.`status`,mp_customer_basic_info.customer_name,ic_number,cm_app_consumptioninst.SALES_NAME,risk_manager_name,cm_app_case.approve_time,approver,sys_get_customer_act.real_name,cm_app_consumptioninst.referral_fee
             from
             (select ac_order.create_time,apply_sn,ac_order.shop_id,mp_contract_account_2_info.customer_id,amount,start_date,end_date,tenor,guarantor_fee,platform_fee,service_fee1,service_fee2,risk_fee,`status`,cm_app_consumptioninst.promoter_mobile
             from ac_order
@@ -72,6 +72,7 @@ def find_all_case(start_date,end_date):
     return sql,param
 
 
+
 #找到开始日期
 @Search
 def find_the_first_day():
@@ -85,7 +86,7 @@ def find_the_first_day():
 #寻找所有审核信息
 @SearchAll
 def Find_all_verify_messege(start_date,end_date):
-    sql='''SELECT ac_order.create_time,ac_order.shop_id,apply_sn,salesman_Manage_name,apply_state,cm_app_case.approve_time,approver,approve_rst,cm_app_consumptioninst.risk_manager_name
+    sql='''SELECT ac_order.create_time,ac_order.shop_id,apply_sn,salesman_Manage_name,apply_state,back_count,cm_app_case.approve_time,approver,approve_rst,cm_app_consumptioninst.risk_manager_name
             from ac_order
             LEFT JOIN cm_app_case on ac_order.apply_sn = cm_app_case.src_case_id
             LEFT JOIN cm_app_consumptioninst on ac_order.apply_sn = cm_app_consumptioninst.src_case_id
@@ -176,6 +177,18 @@ def find_shop():
             ORDER BY id
     '''
     param = ()
+    return sql,param
+
+#更新复审状态信息查询
+@SearchAll
+def find_normal_cases(case_list):
+    sql='''SELECT ac_order.create_time,ac_order.shop_id,apply_sn,salesman_Manage_name,apply_state,back_count,cm_app_case.approve_time,approver,approve_rst,cm_app_consumptioninst.risk_manager_name
+            from ac_order
+            LEFT JOIN cm_app_case on ac_order.apply_sn = cm_app_case.src_case_id
+            LEFT JOIN cm_app_consumptioninst on ac_order.apply_sn = cm_app_consumptioninst.src_case_id
+            WHERE ac_order.create_time is not NULL and apply_sn IN %s
+            order by ac_order.create_time;'''
+    param =(case_list,)
     return sql,param
 
 
