@@ -292,11 +292,12 @@ class TableExcute():
 
         for shop_id in shop_reflect:
             cases_id = set(data[(data['behave'] == '风控审批')&(data['shop_id']==int(shop_id))]['case_id'])
-            sale_names_list = set(case_frame[case_frame['case_id'].isin(cases_id)]['sale_name'].dropna(how='any'))
+            cases_in_shop  = case_frame[case_frame['case_id'].isin(cases_id)]
+            sale_names_list = set(cases_in_shop['sale_name'].dropna(how='any'))
 
             if sale_names_list:
                 for sale_name in sale_names_list:
-                    apply_by_sale_person = case_frame[case_frame['sale_name']==sale_name]
+                    apply_by_sale_person = cases_in_shop[cases_in_shop['sale_name']==sale_name]
                     statistic_data = data_excute.merit_by_sale_name(apply_by_sale_person,date_index,sale_name,int(shop_id))
                     statistic_data['shop_name'] = shop_reflect[shop_id]
                     result_list.append(statistic_data)
@@ -467,7 +468,7 @@ class Data_Execute:
                     for index in apply_peron_cases.index:
                         case_info = apply_peron_cases.loc[index].values
                         if case_info[1][3]>=5 and case_info[1][10]==0:
-                            merit_pay+=case_info[3]
+                            merit_pay+=case_info[3]*0.04
             else:
                 merit_pay =0
         else:

@@ -127,7 +127,7 @@
 
                         targets: 1,
                         render: function(data, type, row, meta) {
-                            return '<a onclick="find_shop_statistic(\''+row.data_name+'\')" >'+data+'</a>';}}
+                            return '<a onclick="find_shop_statistic(\''+row.data_name+'\',\''+row.date+'\')" >'+data+'</a>';}}
                     ],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
@@ -205,9 +205,9 @@
                     {
                         //   指定第最后一列
 
-                        targets: 0,
+                        targets: 1,
                         render: function(data, type, row, meta) {
-                            return '<a onclick="find_shop_statistic(\''+row.data_name+'\')" >'+data+'</a>';}}
+                            return '<a onclick="find_shop_statistic(\''+row.data_name+'\',\''+row.date+'\')")" >'+data+'</a>';}}
                     ],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
@@ -227,8 +227,9 @@
             }
         );
     }
-    function find_shop_statistic(shop) {
-        window.open("/statistic?shop="+shop)
+    function find_shop_statistic(shop,date) {
+        var args = "shop="+shop+"&date="+date;
+        window.open("/statistic?"+args)
     }
  </script>
 {% endblock %}
