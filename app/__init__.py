@@ -25,57 +25,100 @@ scheduler = APScheduler()
 def data_profile():
     from .models import Case, CaseLogs
     from .main.sqlhelper import find_shop
+    print('Data Profile are excusing...')
 
-    date_list = CaseLogs.objects().all()
+    now = datetime.datetime.now()
     cases = Case.objects().all()
-    print('Loading....')
+    case_logs = CaseLogs.objects.all()
 
-    #日志信息按月存入redis
-    log_list = list(event for date in date_list
-                    for behave in date.events
-                    for event in date.events[behave])
-    logs_data = pd.DataFrame(log_list)
-    dates = sorted(logs_data['date'])
-    date_final = dates[len(dates) - 1]
-    date_first = dates[0]
+    print('Mongo Data has reload')
 
-    #将日志范围存入redis
-    # date_range = {'date_first':date_first,'date_final':date_final}
-    # red.set('date_range', json.dumps(date_range))
-    red.set('logs_data',DataFrame(logs_data).to_msgpack(compress='zlib'))
-    # event_dict = {}
-    # for year in range(date_first.year, date_final.year + 1):
-    #     if year == date_first.year and year != date_final.year:
-    #         for month in range(date_first.month, 13):
-    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
-    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
-    #     elif year == date_first.year and year == date_final.year:
-    #         for month in range(date_first.month, date_final.month + 1):
-    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
-    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
-    #         break
-    #     elif year != date_final.year:
-    #         for month in range(1, 13):
-    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
-    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
-    #     else:
-    #         for month in range(1, date_final.month + 1):
-    #             event_dict['logs_data_%s-%s' % (year, month)] = logs_data.loc[
-    #                 logs_data['date'].apply(lambda x: x.month == month and x.year == year)]
+    cases_info_list = []
+    for case in cases:
+        overtime = 0
 
-    # for date in event_dict:
-    #     red.set(date, DataFrame(event_dict[date]).to_msgpack(compress='zlib'))
-    print('Logs Data Complete')
+        chushen_events = case.logs['chushen']
+        if chushen_events:
+            apply_date = chushen_events[0]['date']
+            apply_approver = chushen_events[0]['manipulator']
+            apply_result = chushen_events[0]['message']
+        else:
+            apply_date, apply_approver, apply_result = None, None, None
 
-    #合同信息存入redis
-    infolist = list(
-        [case.case_id, case.case_status, float(case.amount) if case.amount else 0.0, float(case.loan_amount) if case.loan_amount else 0.0,case.sale_name,case.status_code,case.recommend_name,float(case.recommend_fee) if case.recommend_fee else 0.0,case.is_renew_case,] for case in
-        cases)
-    case_data = DataFrame(infolist)
-    case_data.columns = ['case_id', 'status', 'amount', 'loan_amount','sale_name', 'status_code','recommend_name','recommend_fee','is_renew_case']
-    case_data = case_data[~case_data['case_id'].isnull()]
-    red.set('case_data', DataFrame(case_data).to_msgpack(compress='zlib'))
-    print('Case Data Complete')
+        fushen_events = case.logs['fushen']
+        if fushen_events:
+            approve_date = fushen_events[0]['date']
+            approve_approver = fushen_events[0]['manipulator']
+            approve_result = fushen_events[0]['message']
+        else:
+            approve_date, approve_approver, approve_result = None, None, None
+
+        loan_events = case.logs['loan']
+        if loan_events:
+            loan_date = None
+            for event in loan_events:
+                if '发送成功' in event['message']['message']:
+                    loan_date = event['date']
+                    break
+        else:
+            loan_date = None
+
+        diancui_events = case.logs['diancui']
+        if diancui_events:
+            overtime = 1
+            diancui_ternors = []
+            diancui_amount = 0.0
+            for diancui_event in diancui_events:
+                if diancui_event['message']['期数'] not in diancui_ternors:
+                    diancui_ternors.append(diancui_event['message']['期数'])
+                    diancui_amount += float(diancui_event['message']['金额'])
+        else:
+            diancui_ternors, diancui_amount = [], 0.0
+
+        waicui_events = case.logs['waicui']
+        if waicui_events:
+            overtime = 1
+            waicui_ternors = []
+            waicui_amount = 0.0
+            for waicui_event in waicui_events:
+                if waicui_event['message']['期数'] not in waicui_ternors:
+                    waicui_ternors.append(waicui_event['message']['期数'])
+                    waicui_amount += float(waicui_event['message']['金额'])
+        else:
+            waicui_ternors, waicui_amount = [], 0.0
+
+        case_dict = {'case_id': case.case_id, 'shop_id': case.shop_id, 'status': case.case_status,
+                     'amount': float(case.amount) if case.amount else 0.0,
+                     'loan_date': loan_date, 'loan_amount': float(case.loan_amount) if case.loan_amount else 0.0,
+                     'status_code': case.status_code, 'recommend_name': case.recommend_name,
+                     'recommend_fee': float(case.recommend_fee) if case.recommend_fee else 0.0,
+                     'apply_date': apply_date, 'apply_approver': apply_approver,
+                     'apply_result': apply_result, 'approve_date': approve_date, 'approve_approver': approve_approver,
+                     'approve_result': approve_result,
+                     'overtime': overtime, 'diancui_ternors': diancui_ternors, 'diancui_amount': diancui_amount,
+                     'waicui_ternors': waicui_ternors, 'waicui_amount': waicui_amount,
+                     'sale_name': case.sale_name, 'is_renew_case': case.is_renew_case}
+        cases_info_list.append(case_dict)
+
+    print('Case Data execute already！')
+    new_case_frame = DataFrame(cases_info_list)
+    red.set('case_data', new_case_frame.to_msgpack(compress='zlib'))
+
+    #到期信息存入
+    print('Payment Data executing...')
+    payment_events = []
+    for case_log in case_logs:
+        for event in case_log.events['payment']:
+            payment_dict = {'date': event['date'], 'case_id': event['case_id'], 'ternor': event['manipulator'],
+                            '本期应还本金': event['message']['本期应还本金'],
+                            '本期已还本金': event['message']['本期已还本金'], '本期应还利息': event['message']['本期应还利息'],
+                            '本期已还利息': event['message']['本期已还利息'], '本期应还费用': event['message']['本期应还费用'],
+                            '本期已还费用': event['message']['本期已还费用'], 'shop_id': event['shop_id']}
+            payment_events.append(payment_dict)
+    payment_logs = DataFrame(payment_events)
+    red.set('payment_logs', payment_logs.to_msgpack(compress='zlib'))
+    print("Payment Data execute already!")
+
 
     #门店信息存入js
     shop_data = find_shop()  # 查询所有门店的名称
@@ -86,7 +129,7 @@ def data_profile():
     shop=json.dumps(shop_reflect)
     red.set('shop_data', shop)
     print('Shop Data complete')
-
+    print('Exhaust time:', datetime.datetime.now() - now)
 
 
 def create_app(config_name):
@@ -108,7 +151,7 @@ def create_app(config_name):
     from .auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint,url_prefix='/auth')
     #
-    data_profile()#数据准备
+    # data_profile()#数据准备
     scheduler.start()
 
 
