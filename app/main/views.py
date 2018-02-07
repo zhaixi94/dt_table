@@ -60,7 +60,8 @@ def shop():
 #催收信息表
 @main.route('/shop/cuishou',methods = ['GET','POST'])
 def shop_cuishou():
-    return render_template('overtimeshop.html')
+    shop_list = json.loads(red.get('shop_data').decode())
+    return render_template('overtimeshop.html',shop_list = shop_list)
 
 #复审信息表
 @main.route('/approve',methods = ['GET','POST'])
@@ -78,10 +79,16 @@ def apply():
     shop_list = json.loads(red.get('shop_data').decode())
     return render_template('apply.html',shop_list = shop_list)
 
+@main.route("/saler",methods = ['GET','POST'])
+def saler():
+    shop_list = json.loads(red.get('shop_data').decode())
+    return render_template("salers.html",shop_list = shop_list)
+
 
 @main.route("/merit",methods = ['GET','POST'])
 def merit():
-    return render_template('merit.html')
+    shop_list = json.loads(red.get('shop_data').decode())
+    return render_template('merit.html',shop_list = shop_list)
 
 #合同日志信息表返回函数
 @main.route("/caselog_get",methods=['GET','POST'])
@@ -137,9 +144,9 @@ def statistic_by_shop():
 #门店催收信息
 @main.route("/cuishou_data/shop",methods=['POST'])
 def cuishou_by_shop():
-    date, end_date = request.form.get('date'), request.form.get('end_date')
+    date, end_date,shop_get = request.form.get('date'), request.form.get('end_date'),request.form.get("shop_id")
     table = TableExcute()
-    dataitems = table.cuishou_by_shop(date,end_date)
+    dataitems = table.cuishou_by_shop(date,end_date,shop_get)
     return jsonify(dataitems)
 
 #复审门店信息
@@ -162,18 +169,27 @@ def recommend_data():
 @main.route("/apply/data",methods = ['GET','POST'])
 def apply_data():
     date, end_date,shop_id = request.form.get('date'), request.form.get('end_date'),request.form.get('shop_id')
-    print(shop_id)
     table=TableExcute()
     data_items = table.apply_by_shop(date,end_date,shop_id)
     return jsonify(data_items)
 
 #绩效数据
-@main.route("/merit/data",methods = ['GET','POST'])
+@main.route("/merit/data",methods = ['POST'])
 def merit_data():
-    date, end_date = request.form.get('date'), request.form.get('end_date')
+    data = request.form.get('rule_data')
+    j_data = json.loads(data)
     table = TableExcute()
-    data_items = table.merit_by_person(date,end_date)
+    data_items = table.merit_by_person(j_data)
     return jsonify(data_items)
+
+
+@main.route("/saler/data",methods = ["POST"])
+def saler_data():
+    date, end_date, shop_id = request.form.get('date'), request.form.get('end_date'), request.form.get('shop_id')
+    table = TableExcute()
+    data_items = table.saler_by_shop(date,end_date,shop_id)
+    return jsonify(data_items)
+
 
 
 

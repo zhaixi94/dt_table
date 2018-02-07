@@ -7,20 +7,50 @@
 </div><br>
 
 
-<div class="filter" >
-<div class="panel panel-default"  style="width: 100%;height: 100%">
-    <div class="panel-heading" style="text-align: left;height: 45px">
-        <div style="width: 45%;float: left">
-        <strong>统计时间：</strong><input id="merit_date" type="date" value="2017-07-10">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="merit_date_end" type="date" value="2017-08-15">
+<div style="height: 100px">
+    <div style="height: 50%">
+        <div style="float: left;width: 25%;">
+            <div class="input-group " style="width: 90%">
+                <span class="input-group-addon">绩效规则</span>
+                <select id="method" class="form-control" style="height: 35px">
+                    <option value="by_num">根据单量</option>
+                    <option value="by_goods">根据有效单量</option>
+                    <option value="by_loanamount">根据放款金额</option>
+                </select>
+            </div>
         </div>
 
-        <button class="btn btn-primary btn-sm" onclick="reload_merit()" style="height: 27px">根据时间筛选</button>
-        <div style="float: right">
-            <strong>自定义表头</strong>
+        <div style="width: 25%;float: left">
+             <div class="input-group " style="width: 90%">
+                <span class="input-group-addon">门店</span>
+                <select style="height: 35px;width: 80%" id="shop_id" class="form-control">
+                    <option value="0">全部门店</option>
+                    {% for shop_id in shop_list %}
+                    <option value="{{ shop_id }}">{{ shop_list[shop_id] }}</option>
+                    {% endfor %}
+                </select>
+             </div>
         </div>
+
+
+        <div style="width: 33%;float: left">
+             <div class="input-group" id="submethod" style="height: 35px;width: 70%">
+                <span class="input-group-addon" >有效单限制为还款</span>
+                <input type="text" class="form-control" id="limit" style="height: 35px;" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" maxlength="2" value="5">
+                <span class="input-group-addon" >期以上</span>
+            </div>
         </div>
     </div>
-    <div class="panel-body" style="height:100%;text-align: center;background: whitesmoke">
+    <div style="height: 50%">
+    <button class="btn btn-default" onclick="addrules()">添加细则</button>
+    </div>
+</div>
+
+<div id="rules"></div>
+<input style="display: none" value="0" id="rules_num">
+<div style="height: 60px;text-align: right;position: relative">
+    <button class="btn btn-primary" style="position: absolute;bottom: 0px;right: 0px;" onclick="merit_figure()">根据细则计算</button>
+</div>
 
 <table id="merit_info"  class="table table-striped table-bordered">
     <thead>
@@ -28,14 +58,15 @@
             <th>日期</th>
             <th>业务员</th>
             <th>所在门店</th>
+            <th>放款量</th>
             <th>有效单量</th>
+            <th>有效单放款量</th>
             <th>绩效</th>
         </tr>
     </thead>
 </table>
 
-    </div>
-</div>
+
 {% endblock %}
 
 {% block style %}
@@ -57,10 +88,27 @@
     <!--<script type="text/javascript" charset="UTF-8" src="../static/tables/test/js/test.js"></script>-->
 
 <script>
-     var date = {
-        'date':$("#merit_date").val(),
-        'end_date':$("#merit_date_end").val()
-    };
+    $(document).ready(function(){
+   $("#method").change(function(){
+       var selected=$(this).children('option:selected').val();
+       var rules= document.getElementsByClassName("rule");
+       var rule_item = document.getElementById("rules");
+       if(selected=="by_goods"){
+           if (rules.length>0){
+               rule_item.innerHTML="";
+           }
+       }else if(selected=="by_loanamount"){
+           if (rules.length>0){
+               rule_item.innerHTML="";
+           }
+       }else if(selected=='by_num'){
+            if (rules.length>0){
+               rule_item.innerHTML="";
+           }
+       }
+
+   });
+});
 
      var merit_detail = $('#merit_info').DataTable(
             {   "paging": true,
@@ -79,22 +127,14 @@
                 $('td', row).attr("class", "text-center");
             },
              "deferRender": true,
-                "ajax":{
-                 url:"{{ url_for('main.merit_data') }}",
-                    type:"POST",
-                    data:date,
-                    dataType:'json',
-                 dataSrc:
-                         function(data){
-                           return data;
-                         }
-               },
                 "columns": [
-                              { "sWidth": "20%","class":'text-center','data':'date'},
-                                { "sWidth": "20%","class":'text-center','data':'data_name'},
-                                { "sWidth": "20%","class":'text-center','data':'shop_name'},
-                              { "sWidth": "20%","class":'text-center','data':'goods' },
-                              { "sWidth": "20%","class":'text-center','data':'merit_pay' }],
+                              { "sWidth": "14%","class":'text-center'},
+                                { "sWidth": "14%","class":'text-center'},
+                                { "sWidth": "14%","class":'text-center'},
+                              { "sWidth": "14%","class":'text-center' },
+                              { "sWidth": "14%","class":'text-center'},
+                              { "sWidth": "14%","class":'text-center'},
+                               { "sWidth": "14%","class":'text-center'} ],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
                             {
@@ -113,63 +153,438 @@
             }
         );
 
-     function reload_merit() {
-         var date_new = {
-        'date':$("#merit_date").val(),
-        'end_date':$("#merit_date_end").val()
-    };
 
-     var merit_detail = $('#merit_info').DataTable(
-            {   "paging": true,
-             "lengthChange": true,
-             "searching": true,
-             "info": true,
-             "destroy":true,
-             "processing":true,
-             "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
-             // set the initial value
-             "pageLength": 10,
-              // set first column as a default sort by asc
-             //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
-                "createdRow": function (row, data, index) {
-                /* 设置表格中的内容居中 */
-                $('td', row).attr("class", "text-center");
-            },
-             "deferRender": true,
-                "ajax":{
-                 url:"{{ url_for('main.merit_data') }}",
-                    type:"POST",
-                    data:date_new,
-                    dataType:'json',
-                 dataSrc:
-                         function(data){
-                           return data;
-                         }
-               },
-                "columns": [
-                              { "sWidth": "20%","class":'text-center','data':'date'},
-                                { "sWidth": "20%","class":'text-center','data':'data_name'},
-                                { "sWidth": "20%","class":'text-center','data':'shop_name'},
-                              { "sWidth": "20%","class":'text-center','data':'goods' },
-                              { "sWidth": "20%","class":'text-center','data':'merit_pay' }],
-                "pagingType":   "full_numbers",
-                "oLanguage":    //DataTable中文化 把提示语之类的换成中文
-                            {
-                             "sProcessing": "正在加载中......",
-                             "sLengthMenu": "每页显示 _MENU_ 条记录",
-                             "sZeroRecords": "对不起，查询不到相关数据！",
-                             "sEmptyTable": "表中无数据存在！",
-                             "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
-                             "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
-                             "sSearch": "搜索：",
-                             "oPaginate": {
-                                 "sFirst": "首页",
-                                 "sPrevious": "上一页",
-                                 "sNext": "下一页",
-                                 "sLast": "末页"}}
-            }
-        );
+     function del(item) {
+         item.parentNode.parentNode.parentNode.removeChild(item.parentNode.parentNode);
      }
+
+     function alter_subrule(item,sublimit_text3,newinput_2) {
+             var by_value = item.value;
+             if (by_value == 'goods'||by_value == "num"){
+                 sublimit_text3.innerHTML = "每单为";
+                 newinput_2.value = '';
+                 newinput_2.onkeyup = function(){this.value=this.value.replace(/\D/g,'')};
+                 newinput_2.onafterpaste = function(){this.value=this.value.replace(/\D/g,'')};
+             }
+             else if (by_value == 'loan_amount'||by_value == "goods_loan"){
+                 sublimit_text3.innerHTML = "系数为";
+                 newinput_2.value = '';
+                 newinput_2.onkeyup = function(){this.value = this.value.replace(/[^\d.]/g,"");};
+                 newinput_2.onafterpaste = function(){this.value = this.value.replace(/[^\d.]/g,"");};
+             }
+         }
+
+     function addsublimit(item,i) {
+         var method = $("#method").val();
+
+         var submethod =$("#sub_method"+i).val();
+         var subinfo_div = item.parentNode.nextSibling;
+         var subinfo = subinfo_div.getElementsByClassName("sublimit");
+
+         var new_sublimit = document.createElement("div");
+         new_sublimit.className = 'sublimit';
+         new_sublimit.style.height="35px";
+
+         var sub_div1 = document.createElement("div");
+         sub_div1.style.width = "20%";
+         sub_div1.style.float = "left";
+         var sub_div2= document.createElement("div");
+         sub_div2.style.width = "20%";
+         sub_div2.style.float = 'left';
+         var sub_div3= document.createElement("div");
+         sub_div3.style.width = "30%";
+         sub_div3.style.float = 'left';
+         sub_div3.style.textAlign = 'center';
+         var sub_div4= document.createElement("div");
+         sub_div4.style.width ="20%";
+         sub_div4.style.float = "left";
+
+
+
+         var sublimit1_group = document.createElement("div");
+         sublimit1_group.style.width = "80%";
+         sublimit1_group.style.float = "right";
+         sublimit1_group.className = "input-group input-group-sm";
+
+         var sublimit_text1 = document.createElement("span");
+         sublimit_text1.className = "input-group-addon";
+         sublimit_text1.innerHTML = "至";
+
+         var sublimit_text2 = document.createElement("span");
+         sublimit_text2.className = "input-group-addon";
+         var newinput  = document.createElement("input");
+         newinput.className = 'form-control';
+         newinput.maxLength = "10";
+
+         var sublimit_group_2 = document.createElement("div");
+         sublimit_group_2.style.width = "80%";
+         sublimit_group_2.style.float = "right";
+         sublimit_group_2.className = "input-group input-group-sm";
+         var sublimit_text3 = document.createElement("span");
+         sublimit_text3.className = "input-group-addon";
+         var newinput_2 = document.createElement("input");
+         newinput_2.className = 'form-control';
+         newinput_2.maxLength = "10";
+
+         var sublimit_group_3 = document.createElement("div");
+         sublimit_group_3.style.width = "80%";
+         sublimit_group_3.style.float = "right";
+         sublimit_group_3.style.visibility = "hidden";
+         sublimit_group_3.className = "input-group input-group-sm";
+         var sublimit_text4 = document.createElement("span");
+         sublimit_text4.innerHTML = "根据";
+         sublimit_text4.className = "input-group-addon";
+         var by_ = document.createElement('select');
+         by_.add(new Option("有效单",'goods'));
+         by_.add(new Option("放款量",'loan_amount'));
+         by_.add(new Option("单量",'num'));
+         by_.add(new Option("有效单放款量",'goods_loan'));
+         by_.className = "form-control";
+
+
+         var delete_button = document.createElement("input");
+         delete_button.type = "button";
+         delete_button.value = "删除分段";
+         delete_button.className = "btn btn-danger btn-sm";
+         delete_button.onclick = function () {del(delete_button)};
+
+
+
+
+         if (method =="by_num"|| method =="by_goods"){
+             sublimit_text2.innerHTML = "单";
+             sublimit_text3.innerHTML = "每单为";
+             newinput.onkeyup = function(){this.value=this.value.replace(/\D/g,'');};
+             newinput.onafterpaste = function(){this.value=this.value.replace(/\D/g,'');};
+             newinput_2.onkeyup = function(){this.value=this.value.replace(/\D/g,'')};
+             newinput_2.onafterpaste = function(){this.value=this.value.replace(/\D/g,'')};
+         }else if (method =="by_loanamount"){
+             sublimit_text2.innerHTML = "元";
+             sublimit_text3.innerHTML = "系数为";
+             newinput.onkeyup = function(){this.value = this.value.replace(/[^\d.]/g,"");};
+             newinput.onafterpaste = function(){this.value = this.value.replace(/[^\d.]/g,"");};
+             newinput_2.onkeyup = function(){this.value = this.value.replace(/[^\d.]/g,"");};
+             newinput_2.onafterpaste = function(){this.value = this.value.replace(/[^\d.]/g,"");};
+         }
+
+         if (submethod == 'convert'){
+             sublimit_group_3.style.visibility = "";
+             sublimit_text3.innerHTML = "每单为";
+         }
+
+         by_.onchange = function () {alter_subrule(by_,sublimit_text3,newinput_2)};
+
+
+         sublimit1_group.appendChild(sublimit_text1);
+         sublimit1_group.appendChild(newinput);
+         sublimit1_group.appendChild(sublimit_text2);
+
+         sublimit_group_2.appendChild(sublimit_text3);
+         sublimit_group_2.appendChild(newinput_2);
+
+         sublimit_group_3.appendChild(sublimit_text4);
+         sublimit_group_3.appendChild(by_);
+
+         sub_div1.appendChild(sublimit1_group);
+         sub_div2.appendChild(sublimit_group_2);
+         sub_div3.appendChild(delete_button);
+         sub_div4.appendChild(sublimit_group_3);
+
+         new_sublimit.appendChild(sub_div1);
+         new_sublimit.appendChild(sub_div4);
+         new_sublimit.appendChild(sub_div2);
+         new_sublimit.appendChild(sub_div3);
+
+         if (subinfo.length>0){
+             subinfo_div.insertBefore(new_sublimit,subinfo[subinfo.length-1].nextSibling)
+         } else {
+             subinfo_div.appendChild(new_sublimit)
+         }
+
+     }
+
+     Date.prototype.Format = function(fmt){
+    var o = {
+         "M+": this.getMonth()+1,
+         "d+": this.getDate(),
+         "H+": this.getHours(),
+         "m+": this.getMinutes(),
+         "s+": this.getSeconds(),
+         "S+": this.getMilliseconds()
+    };
+
+    //因位date.getFullYear()出来的结果是number类型的,所以为了让结果变成字符串型，下面有两种方法：
+
+    if(/(y+)/.test(fmt)){
+        //第一种：利用字符串连接符“+”给date.getFullYear()+""，加一个空字符串便可以将number类型转换成字符串。
+
+        fmt=fmt.replace(RegExp.$1,(this.getFullYear()+"").substr(4-RegExp.$1.length));
+    }
+    for(var k in o){
+        if (new RegExp("(" + k +")").test(fmt)){
+
+            //第二种：使用String()类型进行强制数据类型转换String(date.getFullYear())，这种更容易理解。
+
+            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(String(o[k]).length)));
+        }
+    }
+    return fmt;
+};
+
+
+     function addrules() {
+
+         var rules_num = document.getElementById("rules_num");
+         rules_num.value = Number(rules_num.value)+1;
+         var i = rules_num.value;
+
+         var myDate = new Date();
+         var now = myDate.Format("yyyy-MM-dd");
+         myDate.setMonth(myDate.getMonth()-1);
+         var month_ago = myDate.Format("yyyy-MM-dd");
+
+         var sub_div1 =document.createElement("div");
+         var sub_div2 =document.createElement("div");
+         var sub_div3 = document.createElement("div");
+         var sub_div4 = document.createElement("div");
+         sub_div1.style.height = '40px';
+         sub_div2.style.height = '40px';
+         sub_div4.style.height = "40px";
+         sub_div3.id = "type_by"+rules_num.value;
+
+        var submethod_num = document.createElement("input");
+        submethod_num.style.display = 'none';
+        submethod_num.value = 0;
+
+         var start_date_div = document.createElement("div");
+         start_date_div.style.float = "left";
+         start_date_div.style.width = "33%";
+         start_date_div.style.height = "100%";
+         start_date_div.className  = "start_date";
+         var start_date_group = document.createElement("div");
+         start_date_group.style.width = "50%";
+         start_date_group.className='input-group input-group-sm';
+         var start_date_string = document.createElement('span');
+         start_date_string.className = 'input-group-addon';
+         start_date_string.innerHTML = '开始时间';
+         var start_date = document.createElement('input');
+         start_date.type = 'date';
+         start_date.className = "form-control";
+         start_date.id = "start_date"+rules_num.value;
+         start_date.value = month_ago;
+         start_date_group.appendChild(start_date_string);
+         start_date_group.appendChild(start_date);
+         start_date_div.appendChild(start_date_group);
+
+
+
+
+         var end_date_div = document.createElement("div");
+         end_date_div.style.float = "left";
+         end_date_div.style.width = "33%";
+         var end_date_group = document.createElement("div");
+         end_date_group.style.width = "50%";
+         end_date_group.className='input-group input-group-sm';
+         var end_date_string = document.createElement('span');
+         end_date_string.className = 'input-group-addon';
+         end_date_string.innerHTML = '结束时间';
+         var end_date = document.createElement('input');
+         end_date.type = 'date';
+         end_date.className = "form-control";
+         end_date.id = "end_date"+rules_num.value;
+         end_date.value = now;
+         end_date_group.appendChild(end_date_string);
+         end_date_group.appendChild(end_date);
+         end_date_div.appendChild(end_date_group);
+
+        var submethod_div = document.createElement("div");
+         submethod_div.style.float = "left";
+         submethod_div.style.width = "33%";
+         var submethod_group = document.createElement("div");
+         submethod_group.style.width = "50%";
+         submethod_group.className='input-group input-group-sm';
+         var submethod_string = document.createElement("span");
+         submethod_string.className = 'input-group-addon';
+         submethod_string.innerHTML = '方案';
+         var submethod = document.createElement('select');
+         submethod.add(new Option("阶梯式",'stage'));
+         submethod.add(new Option("变换式",'convert'));
+         submethod.className = "form-control";
+         submethod.id = "sub_method"+rules_num.value;
+         submethod.onchange  = function () {
+             var submethod_id = submethod.id;
+             var to_delete = document.getElementById("type_by"+submethod_id.slice(-1));
+             to_delete.innerHTML = "";
+         };
+         submethod_group.appendChild(submethod);
+         submethod_group.appendChild(submethod_string);
+         submethod_div.appendChild(submethod_group);
+
+
+         var new_div = document.createElement('div');
+         new_div.className = 'rule';
+         new_div.id= "rule"+i;
+         new_div.style.background = '#E4E4E4';
+         var rule_info = document.createElement('input');
+         rule_info.type= 'button';
+         rule_info.value = '添加分段';
+         rule_info.className = "btn btn-sm";
+         rule_info.onclick = function(){addsublimit(rule_info,i)};
+         var delete_button = document.createElement("input");
+         delete_button.type = 'button';
+         delete_button.value = '删除细则方案';
+         delete_button.className = "btn btn-danger";
+         delete_button.style.float = 'right';
+         delete_button.id = "delete_rule"+rules_num.value;
+         delete_button.onclick = function () {del(delete_button)};
+
+
+
+         sub_div1.appendChild(start_date_div);
+         sub_div1.appendChild(end_date_div);
+         sub_div1.appendChild(submethod_div);
+
+         sub_div2.appendChild(rule_info);
+         sub_div4.appendChild(delete_button);
+
+         new_div.appendChild(sub_div1);
+         new_div.appendChild(sub_div2);
+         new_div.appendChild(sub_div3);
+         new_div.appendChild(sub_div4);
+
+
+
+         var rules_div = document.getElementById("rules");
+         var rules = document.getElementsByClassName("rule");
+
+         if (rules.length>0){rules_div.insertBefore(new_div,rules[rules.length-1].nextSibling)}
+         else {rules_div.appendChild(new_div)}
+
+
+     }
+     function merit_figure() {
+         var send_message = true;
+         var infomation = {}
+         var rules = document.getElementsByClassName("rule");
+         var subinfo = document.getElementsByClassName("sublimit");
+         var method = $("#method").val();
+         var shop_id = $("#shop_id").val();
+         var limit = Number($("#limit").val());
+
+         if (rules.length==0){
+             alert('请添加绩效计算细则');
+         }else if (subinfo.length ==0){
+             alert("请完善绩效计算细则");
+         }else{
+             var rules_list = [];
+             for (i=0;i<rules.length;i++){
+                 var rule = rules[i];
+                 var rule_id = rule.id;
+                 var id_num = rule_id.slice(-1);
+                 var sublimit = [0];
+                 var subrule = [];
+                 var start_date = document.getElementById("start_date"+id_num);
+                 var end_date = document.getElementById("end_date"+id_num);
+                 var submethod = document.getElementById("sub_method"+id_num);
+                 var type_by = document.getElementById("type_by"+id_num);
+                 var subrules = type_by.getElementsByClassName('sublimit');
+                 for (j=0;j<subrules.length;j++){
+                     var inputs = subrules[j].getElementsByTagName("input");
+                     sublimit.push(Number(inputs[0].value));
+                     if (submethod.value =="convert"){
+                         var select = subrules[j].getElementsByTagName("select");
+                         var spans = subrules[j].getElementsByTagName("span");
+                         var type = "";
+                         if (spans[3].innerHTML=="系数为"){type="rate"}
+                         else{type="money"}
+                         var subrule_info = {"by":select[0].value,"data":Number(inputs[1].value),'type':type};
+                         subrule.push(subrule_info)}
+                     else{subrule.push(Number(inputs[1].value))}
+                 }
+                 if (sublimit.length == 1){alert('请完善分段信息');send_message = false}
+
+                 var method_info ={
+                   "is_waicui_valid":'0',
+                     "limit":limit,
+                     "submethod":submethod.value,
+                     "sublimit":sublimit,
+                     "subrule":subrule
+                 };
+
+                 var rule_info = {
+                     "start_date":start_date.value,
+                     "end_date":end_date.value,
+                     "method":method,
+                     "method_info":method_info
+                 };
+                 rules_list.push(rule_info)}
+
+             var rule_data ={
+                 "shop_id":shop_id,
+                 "is_save":0,
+                 "rules":rules_list
+             };
+
+             infomation = {
+                 "rule_data":JSON.stringify(rule_data)
+             };
+             if (send_message == true){
+                 var merit_detail = $('#merit_info').DataTable(
+                    {   "paging": true,
+                     "lengthChange": true,
+                     "searching": true,
+                     "info": true,
+                     "destroy":true,
+                     "processing":true,
+                     "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
+                     // set the initial value
+                     "pageLength": 10,
+                      // set first column as a default sort by asc
+                     //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                        "createdRow": function (row, data, index) {
+                        /* 设置表格中的内容居中 */
+                        $('td', row).attr("class", "text-center");
+                    },
+                     "deferRender": true,
+                        "ajax":{
+                         url:"{{ url_for('main.merit_data') }}",
+                            type:"POST",
+                            data:infomation,
+                            dataType:'json',
+                         dataSrc:
+                                 function(data){
+                                   return data;
+                                 }
+                       },
+                        "columns": [
+                            { "sWidth": "14%","class":'text-center','data':'date_index'},
+                            { "sWidth": "14%","class":'text-center','data':'data_name'},
+                            { "sWidth": "14%","class":'text-center','data':'shop_name'},
+                            { "sWidth": "14%","class":'text-center','data':'loan_amount'},
+                            { "sWidth": "14%","class":'text-center','data':'goods' },
+                            { "sWidth": "14%","class":'text-center','data':'goods_loan_amount'},
+                            { "sWidth": "14%","class":'text-center','data':'merit_pay' }],
+                        "pagingType":   "full_numbers",
+                        "oLanguage":    //DataTable中文化 把提示语之类的换成中文
+                                    {
+                                     "sProcessing": "正在加载中......",
+                                     "sLengthMenu": "每页显示 _MENU_ 条记录",
+                                     "sZeroRecords": "对不起，查询不到相关数据！",
+                                     "sEmptyTable": "表中无数据存在！",
+                                     "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                                     "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                                     "sSearch": "搜索：",
+                                     "oPaginate": {
+                                         "sFirst": "首页",
+                                         "sPrevious": "上一页",
+                                         "sNext": "下一页",
+                                         "sLast": "末页"}}
+                    }
+                );
+             }
+     }
+     }
+
 </script>
 
 {% endblock %}

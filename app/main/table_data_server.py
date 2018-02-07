@@ -7,7 +7,6 @@ import datetime,json
 import numpy as np
 import pandas as pd
 from mongoengine.queryset.visitor import Q
-import queue,threading
 from collections import defaultdict
 
 #表格处理函数
@@ -166,35 +165,33 @@ class TableExcute():
         return result_list
 
     #催收表处理
-    def cuishou_by_shop(self,start_date,end_date):
+    def cuishou_by_shop(self,start_date,end_date,shop_get):
         def cuishou(shop_name,date):
             none_data ={'date': date, 'data_name': shop_name, 'overtime_amount': '%.2f' % 0.0, 'overtime_num': 0,
              'waicui_num': 0, 'waicui_amount': '%.2f' % 0.0, 'overtime_rate': '%.2f%%' % 0.0,
              'diancui_waicui_rate': '%.2f%%' % 0.0,
              'waicui_end_num': 0, 'waicui_end_amount': '%.2f' % 0.0,'waicui_rate':'%.2f%%'%0.0}
             return none_data
+
+        shop_reflect = json.loads(red.get('shop_data').decode())
+        if int(shop_get) == 0 or not shop_get:
+            shop_ids = [int(i) for i in shop_reflect.keys()]
+        else:
+            shop_ids = [int(shop_get)]
         start_date = DateStrToDate(start_date)
         end_date = DateStrToDate(end_date)
         case_data = pd.read_msgpack(red.get('case_data'))
-        shop_reflect = json.loads(red.get('shop_data').decode())
-        result_dict = defaultdict(list)
+
         result_list = []
         date_index = "%s/%s" % (start_date.strftime('%Y-%m-%d'), end_date.strftime('%m-%d'))
 
         data = case_data[(case_data['apply_date'] >= start_date) & (case_data['apply_date'] <= end_date)]
         data_excute = Data_Execute()
-        shop_list = set(data['shop_id'].dropna(how='any'))
 
-        for shop in shop_list:
+        for shop in shop_ids:
             shop_data = data_excute.cuishou_by_shop(table=data[data['shop_id']==shop],date_index=date_index,data_name=shop)
             shop_data['data_name']=shop_reflect[str(shop)]
-            result_dict[int(shop)]=shop_data
-
-        for shop_id in shop_reflect:
-            if not result_dict[int(shop_id)]:
-                result_list.append(cuishou(shop_reflect[shop_id],date_index))
-            else:
-                result_list.append(result_dict[int(shop_id)])
+            result_list.append(shop_data)
         return result_list
 
     #复审表处理
@@ -217,13 +214,13 @@ class TableExcute():
         return result_list
 
     def apply_by_shop(self,start_date,end_date,shop_ids=None):
+        shop_reflect = json.loads(red.get('shop_data').decode())
         start_date = DateStrToDate(start_date)
         end_date = DateStrToDate(end_date, hour=23, minute=59, seconds=59)
         if int(shop_ids) == 0 or not shop_ids:
-            shop_ids = [i for i in range(2,24)]
+            shop_ids = [int(i) for i in shop_reflect.keys()]
         else:shop_ids = [int(shop_ids)]
 
-        shop_reflect = json.loads(red.get('shop_data').decode())
         case_data = pd.read_msgpack(red.get('case_data'))
         data = case_data[(case_data['apply_date'] >= start_date) & (case_data['apply_date'] < end_date)&(case_data['shop_id'].isin(shop_ids))]
         data_excute = Data_Execute()
@@ -261,25 +258,56 @@ class TableExcute():
             result_list.append(shop_data)
         return result_list
 
-
-    def merit_by_person(self,start_date,end_date):
+    #业务员表格
+    def saler_by_shop(self,start_date,end_date,shop_ids=None):
         start_date = DateStrToDate(start_date)
         end_date = DateStrToDate(end_date, hour=23, minute=59, seconds=59)
+        shop_reflect = json.loads(red.get('shop_data').decode())
+        if int(shop_ids) == 0 or not shop_ids:
+            shop_ids = [int(i) for i in shop_reflect.keys()]
+        else:shop_ids = [int(shop_ids)]
+
+        case_data = pd.read_msgpack(red.get('case_data'))
+        data = case_data[(case_data['apply_date'] >= start_date) & (case_data['apply_date'] < end_date) & (
+        case_data['shop_id'].isin(shop_ids))]
+        data_excute = Data_Execute()
+        date_index = "%s/%s" % (start_date.strftime('%Y-%m-%d'), end_date.strftime('%m-%d'))
+        result_list = []
+        salers = set(data['sale_name'].dropna(how='any'))
+
+        for saler in salers:
+            saler_data = data[data['sale_name']==saler]
+            statistic_data = data_excute.saler_by_shop(saler_data,date_index,saler)
+            saler_shop_id = list(set(saler_data['shop_id']))
+            if saler_shop_id!=[]:
+                statistic_data['shop_name'] = shop_reflect[str(saler_shop_id[0])]
+            else:
+                statistic_data['shop_name'] = "无门店"
+            result_list.append(statistic_data)
+        return result_list
+
+
+
+    def merit_by_person(self,method_dic):
         case_data = pd.read_msgpack(red.get('case_data'))
         shop_reflect = json.loads(red.get('shop_data').decode())
         result_list = []
+        shop_id = method_dic['shop_id']
+        if int(shop_id) == 0:
+            shop_ids = [int(i) for i in shop_reflect.keys()]
+        else:
+            shop_ids = [int(shop_id)]
+        case_data_in_shops = case_data[case_data['shop_id'].isin(shop_ids)]
+        rules = method_dic['rules']
+        data_execute = Data_Execute()
 
-        data = case_data[(case_data['apply_date'] >= start_date) & (case_data['apply_date'] <= end_date)]
-        data_excute = Data_Execute()
-        date_index = "%s/%s" % (start_date.strftime('%Y-%m-%d'), end_date.strftime('%m-%d'))
-
-        salename_list = set(data['sale_name'].dropna(how='any'))
-
-        for salename in salename_list:
-            data_by_person = data[data['sale_name']==salename]
-            shop_id = list(set(data_by_person['shop_id'].dropna(how='any')))[0]
-            statistic_data = data_excute.merit_by_sale_name(table=data_by_person,date_index=date_index,data_name=salename,shop_name=shop_reflect[str(shop_id)])
-            result_list.append(statistic_data)
+        sale_names = set(case_data_in_shops['sale_name'].dropna(how='any'))
+        for sale_name in sale_names:
+            data_by_person = case_data_in_shops[case_data_in_shops['sale_name']==sale_name]
+            person_shop_id_list = list(set(data_by_person['shop_id']))
+            person_shop_id = person_shop_id_list[0]
+            person_list = data_execute.merit_by_sale_name(data_by_person,sale_name,rules,shop_reflect[str(person_shop_id)])
+            result_list += person_list
         return result_list
 
 
@@ -367,52 +395,127 @@ class Data_Execute:
         return  renew_num,ontime_num,advance_num
 
     #有效单计算
-    def goods_num(self,case_frame,limit):
-        goods = 0# 有效单量
-        for case in case_frame['status']:
-            if case[3] >= limit and case[10] == 0:
-                goods += 1
-        return goods
+    def goods_num(self,case_frame,limit,is_waicui_valid=False):
+        if not is_waicui_valid:
+            f1 = lambda x : 1 if x[3]>=limit and x[10] == 0 else 0
+        else:
+            f1 = lambda x: 1 if x[3]>= limit else 0
+        case_frame['is_goods'] = case_frame['status'].apply(f1)
+        goods_cases = case_frame[case_frame['is_goods'] == 1]
+        goods = len(goods_cases)
+        goods_loan_amount = goods_cases['loan_amount'].sum() if goods != 0 else 0.0
+        return goods,goods_loan_amount
 
     #绩效计算
-    def merit_pay_figure(self,apply_person_cases,shop_name):
-        if not apply_person_cases.empty:
-            merit_rules = {'芃鼎上海徐汇分部':'merit_rule_1','济南门店':'merit_rule_2','大连门店':'merit_rule_3','泉州门店':'merit_rule_4'}
-            goods = self.goods_num(apply_person_cases,4)
-            if shop_name in merit_rules:
-                merit_pay =self.merit_figure_by(rule=merit_rules[shop_name],apply_peron_cases=apply_person_cases,goods=goods)
+    def merit_pay_figure(self,personal_data,rule):
+        start_date = DateStrToDate(rule['start_date'])
+        end_date = DateStrToDate(rule['end_date'], 23, 59, 59)
+        date_index = "%s/%s"%(start_date.strftime("%Y-%m-%d"),end_date.strftime("%m-%d"))
+        if not personal_data.empty:
+            time_limit_data = personal_data[(personal_data['apply_date']>=start_date)&(personal_data['apply_date']<end_date)]
+            method = rule['method']
+            rule_info = rule['method_info']
+            if method == 'by_goods':
+                merit_dict = self.figure_merit_by_goods(time_limit_data,rule_info)
+            elif method == 'by_loanamount':
+                merit_dict = self.figure_merit_by_loan_amount(time_limit_data,rule_info)
+            elif method == "by_num":
+                merit_dict = self.figure_merit_by_num(time_limit_data,rule_info)
             else:
-                merit_pay = self.merit_figure_by(rule='other',apply_peron_cases=apply_person_cases, goods=goods)
+                merit_dict = {'goods': 0, 'merit_pay': 0.0}
         else:
-            goods,merit_pay = 0,0
-        return goods,merit_pay
+            merit_dict= {'goods':0,'merit_pay':0.0}
+        merit_dict['date_index']=date_index
+        return merit_dict
 
-    def merit_figure_by(self,rule,apply_peron_cases,goods = 0):
-        if rule == 'merit_rule_1':
-            merit_pay = max(goods - 20, 0) * 300 + max(goods - 10 if goods < 20 else 10, 0) * 250 + max(goods - 5 if goods < 10 else 5, 0) * 200
-        elif rule == 'merit_rule_2':
-            merit_pay = max(goods - 5, 0) * 200
-        elif rule == 'merit_rule_3':
-            merit_pay = 0
-            goods_limit = [5,10,20,30,40,np.inf]
-            limit_rule = [0,200,250,300,350,400]
-            for i in range(len(goods_limit)-1):
-                if goods<=goods_limit[i]:
-                    merit_pay = goods*limit_rule[i]
-                    break
-        elif rule == 'merit_rule_4':
-            loan_amount = apply_peron_cases['loan_amount'].sum()
-            if loan_amount>=14*10000:
-                if loan_amount>=45*10000:
-                    merit_pay = loan_amount*0.05
-                else:
-                    f = lambda x: x['loan_amount'] * 0.04 if x['status'][3] >= 5 and x['status'][10] == 0 else 0.0
-                    merit_pay = apply_peron_cases.apply(f, axis=1).sum()
-            else:
-                merit_pay =0
+    def figure_merit_by_goods(self,time_limit_data,rule_info):
+        if not time_limit_data.empty:
+            limit = rule_info['limit']
+            is_waicui_vaild = True if int(rule_info['is_waicui_valid']) ==1 else False
+            goods,goods_loan_amount = self.goods_num(time_limit_data,limit,is_waicui_vaild)
+            loan_amount = time_limit_data['loan_amount'].sum()
+            submethod = rule_info['submethod']
+            merit_pay = 0.0
+            sublimits = rule_info['sublimit']
+            subrules = rule_info['subrule']
+            if submethod == 'stage':
+                for i in range(len(sublimits)-1):
+                    merit_pay += min(max(goods - sublimits[i],0),sublimits[i+1]-sublimits[i])*subrules[i]
+            elif submethod  == "convert":
+                for i in range(len(sublimits)-1):
+                    if goods<=float(sublimits[i + 1]):
+                        subrule = subrules[i]
+                        merit_pay = self.subrule_figure(time_limit_data,subrule,goods=goods,goods_loan_amount=goods_loan_amount,loan_amount=loan_amount)
+                        break
+            else:merit_pay =0.0
+        else:goods,merit_pay,goods_loan_amount,loan_amount = 0,0.0,0.0,0.0
+        return {'goods':goods,'merit_pay':merit_pay,'goods_loan_amount':goods_loan_amount,'loan_amount':loan_amount}
+
+    def figure_merit_by_loan_amount(self,time_limit_data,rule_info):
+        if not time_limit_data.empty:
+            limit = rule_info['limit']
+            is_waicui_vaild = True if int(rule_info['is_waicui_valid']) == 1 else False
+            goods, goods_loan_amount = self.goods_num(time_limit_data, limit, is_waicui_vaild)
+            submethod = rule_info['submethod']
+            loan_amount = time_limit_data['loan_amount'].sum()
+            merit_pay = 0.0
+            sublimits = rule_info['sublimit']
+            subrules = rule_info['subrule']
+            if submethod == 'stage':
+                for i in range(len(sublimits) - 1):
+                    merit_pay += min(max(loan_amount - sublimits[i], 0), sublimits[i + 1] - sublimits[i]) * subrules[i]
+            elif submethod == "convert":
+                for i in range(len(sublimits) - 1):
+                    if loan_amount <= float(sublimits[i + 1]):
+                        subrule = subrules[i]
+                        merit_pay = self.subrule_figure(time_limit_data, subrule, goods=goods,goods_loan_amount=goods_loan_amount,loan_amount=loan_amount)
+                        break
+            else:merit_pay = 0.0
+        else:goods, merit_pay, goods_loan_amount, loan_amount = 0, 0.0, 0.0, 0.0
+        return {'goods': goods, 'merit_pay': merit_pay, 'goods_loan_amount': goods_loan_amount,
+                    'loan_amount': loan_amount}
+
+    def figure_merit_by_num(self,time_limit_data,rule_info):
+        if not time_limit_data.empty:
+            limit = rule_info['limit']
+            is_waicui_vaild = True if int(rule_info['is_waicui_valid']) == 1 else False
+            goods, goods_loan_amount = self.goods_num(time_limit_data, limit, is_waicui_vaild)
+            loan_amount = time_limit_data['loan_amount'].sum()
+            submethod = rule_info['submethod']
+            num = len(time_limit_data)
+            merit_pay = 0.0
+            sublimits = rule_info['sublimit']
+            subrules = rule_info['subrule']
+            if submethod == 'stage':
+                for i in range(len(sublimits) - 1):
+                    merit_pay += min(max(num - sublimits[i], 0), sublimits[i + 1] - sublimits[i]) * subrules[i]
+            elif submethod == 'convert':
+                for i in range(len(sublimits) - 1):
+                    if num <= float(sublimits[i + 1]):
+                        subrule = subrules[i]
+                        merit_pay = self.subrule_figure(time_limit_data,subrule,goods=goods,goods_loan_amount=goods_loan_amount,loan_amount=loan_amount)
+                        break
+            else:merit_pay = 0.0
+        else:goods, merit_pay, goods_loan_amount, loan_amount = 0, 0.0, 0.0, 0.0
+        return {'goods': goods, 'merit_pay': merit_pay, 'goods_loan_amount': goods_loan_amount,
+                    'loan_amount': loan_amount}
+
+    def subrule_figure(self,table,subrule,goods=0,goods_loan_amount=0,loan_amount=0):
+        type_by = subrule['by']
+        if not table.empty:
+            if type_by == 'num':
+                num = len(table)
+                merit = num * float(subrule['data'])
+            elif type_by == 'loan_amount':
+                merit = loan_amount * float(subrule['data'])
+            elif type_by == 'goods':
+                merit = goods * float(subrule['data'])
+            elif type_by == 'goods_loan':
+                merit = goods_loan_amount *float(subrule['data'])
+            else:merit = 0.0
         else:
-            merit_pay = max(goods - 20, 0) * 300 + max(goods - 5 if goods < 20 else 15, 0) * 200
-        return merit_pay
+            merit = 0.0
+        return merit
 
     #总览统计函数
     def index_stactic(self,date_frame,data_name,date_index,index=False,payment_logs=None):
@@ -567,15 +670,40 @@ class Data_Execute:
 
         return statistic_data
 
+    def saler_by_shop(self,table,date_index,data_name):
+        if not table.empty:
+            jinjian, apply_success, apply_su_num = self.apply_info(table)
+            approve_num, approve_success_num, approve_dely, approve_retry = self.approve_info(table)
+            overtime_num, overtime_amount, waicui_num, waicui_amount = self.overtime_info(table)
+            statistic_data = {'date': date_index, 'data_name': data_name, 'jinjian': jinjian,
+                              'apply_su_num': apply_su_num, 'approve_success_num': approve_success_num,
+                              'approve_dely_rate': '%.2f' % (approve_dely / approve_num if approve_num else 0.0),
+                              'approve_rate': '%.2f' % (approve_success_num / apply_su_num if apply_su_num else 0.0),
+                              'waicui_num': waicui_num, 'waicui_amount': '%.2f' % waicui_amount,
+                              'approve_retry': approve_retry,
+                              'approve_retry_rate': '%.2f' % (approve_retry / apply_su_num if apply_su_num else 0.0),}
+        else:
+            statistic_data = {'date': date_index, 'data_name': data_name, 'jinjian': 0, 'apply_su_num': 0,
+                              'approve_success_num': 0,
+                              'approve_dely_rate': '%.2f' % 0.0, 'approve_rate': '%.2f' % 0.0, 'waicui_num': 0,
+                              'waicui_amount': '%.2f' % 0.0,
+                              'approve_retry': 0, 'approve_retry_rate': '%.2f' % 0.0}
+        return statistic_data
+
 
     #业务员绩效
-    def merit_by_sale_name(self,table,date_index,data_name,shop_name):
+    def merit_by_sale_name(self,table,data_name,rules,shop_name):
         if not table.empty:
-            goods,merit_pay = self.merit_pay_figure(table,shop_name)
-            statistic_data = {'date':date_index,'data_name':data_name,'goods':goods,'merit_pay':'%.2f'%float(merit_pay),'shop_name':shop_name}
+            statistic_list = []
+            for rule in rules:
+                merit_dic = self.merit_pay_figure(table,rule)
+                merit_dic['data_name']=data_name
+                merit_dic['shop_name']=shop_name
+                statistic_list.append(merit_dic)
         else:
-            statistic_data = {'date':date_index,'data_name':data_name,'goods':0,'merit_pay':'%.2f'%float(0),'shop_name':shop_name}
-        return statistic_data
+            statistic_list = []
+        return statistic_list
+
 
 
 

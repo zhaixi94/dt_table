@@ -28,6 +28,7 @@ def data_profile():
     print('Data Profile are excusing...')
 
     now = datetime.datetime.now()
+    print('The time is:',now)
     cases = Case.objects().all()
     case_logs = CaseLogs.objects.all()
 
@@ -153,6 +154,5 @@ def create_app(config_name):
     #
     # data_profile()#数据准备
     scheduler.start()
-
 
     return app

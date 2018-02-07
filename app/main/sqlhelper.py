@@ -5,11 +5,13 @@ import MySQLdb
 import MySQLdb.cursors
 
 def get_conn():
-    host = '192.168.99.152'
-    username = 'root'
-    passwd = 'root'
-    db = 'consumerfin11'
-    port=3306
+    from .. import config
+    mysqlconfig = config['dev'].SQLHELPER
+    host = mysqlconfig['host']
+    username = mysqlconfig['username']
+    passwd = mysqlconfig['passwd']
+    db = mysqlconfig['db']
+    port=mysqlconfig['port']
     conn=MySQLdb.connect(host=host,port=port,user=username,passwd=passwd,db=db,charset='utf8',cursorclass=MySQLdb.cursors.DictCursor)
     return conn
 

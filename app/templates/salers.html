@@ -1,17 +1,18 @@
 {% extends "base.html" %}
-{% block title %}门店催收信息{% endblock %}
+{% block title %}业务员信息{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
-<h1><strong>门店催收信息表</strong></h1>
-<br>
+<h1><strong>业务员信息表</strong></h1>
+    <br>
 </div>
 
-<div class="filter" >
+
+    <div class="filter" >
 <div class="panel panel-default"  style="width: 100%;height: 100%">
     <div class="panel-heading" style="text-align: left;height: 45px">
         <div style="width: 45%;float: left">
-        <strong>统计时间：</strong><input id="cuishou_shop_date" type="date" value="2017-07-10">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="cuishou_shop_date_end" type="date" value="2017-08-15">
+        <strong>统计时间：</strong><input id="saler_date" type="date" value="2017-07-10">&nbsp;&nbsp;&nbsp;<strong> 至： </strong><input id="saler_date_end" type="date" value="2017-08-15">
         </div>
         <div style="width: 20%;float: left">
             <strong>门店：</strong>
@@ -23,7 +24,7 @@
             </select>
         </div>
 
-        <button class="btn btn-primary btn-sm" onclick="reload_cuishou()" style="height: 27px">根据时间筛选</button>
+        <button class="btn btn-primary btn-sm" onclick="reload_apply()" style="height: 27px">筛选</button>
         <div style="float: right">
             <strong>自定义表头</strong>
         </div>
@@ -31,29 +32,29 @@
     </div>
     <div class="panel-body" style="height:100%;text-align: center;background: whitesmoke">
 
-<table id="shop_cuishou"  class="table table-striped table-bordered">
+<table id="saler_info"  class="table table-striped table-bordered">
     <thead>
         <tr>
             <th>日期</th>
-            <th>门店</th>
-            <th>逾期单量</th>
-            <th>逾期单量比</th>
-            <th>逾期金额</th>
+            <th>业务员</th>
+            <th>所在门店</th>
+            <th>进件量</th>
+            <th>风控批件量</th>
+            <th>复审批件量</th>
+            <th>风控拒单率</th>
+            <th>审批通过率</th>
+            <th>信息不全退单量</th>
+            <th>退单修改率</th>
             <th>外催单量</th>
-            <th>外催单量比</th>
             <th>外催金额</th>
-            <th>外催结清单量</th>
-            <th>外催结清金额</th>
-            <th>电催移交比</th>
         </tr>
     </thead>
 </table>
+
     </div>
 </div>
 
-
 {% endblock %}
-
 
 {% block style %}
 {{ super() }}
@@ -63,23 +64,22 @@
 
 {% endblock %}
 
-
 {% block scripts %}
 {{ super() }}
-<!-- jQuery-->
+    <!-- jQuery-->
     <script type="text/javascript" charset="UTF-8" src="../static/media/js/jquery.js"></script>
 <!-- Datatables-->
     <script type="text/javascript" charset="utf8" src="../static/media/js/jquery.dataTables.js"></script>
     <script type="text/javascript" charset="utf8" src="../static/media/js/dataTables.bootstrap.js"></script>
     <!--<script type="text/javascript" charset="UTF-8" src="../static/tables/test/js/test.js"></script>-->
 <script>
-    var cuishou_data ={
-        'date':$("#cuishou_shop_date").val(),
-        'end_date':$("#cuishou_shop_date_end").val(),
-        "shop_id":$("#shop_id").val()
+   var date = {
+        'date':$("#saler_date").val(),
+        'end_date':$("#saler_date_end").val(),
+        'shop_id':$("#shop_id").val()
     };
-         $(document).ready(function () {
-        $('#shop_cuishou').DataTable(
+
+     var approve_detail = $('#saler_info').DataTable(
             {   "paging": true,
              "lengthChange": true,
              "searching": true,
@@ -91,29 +91,34 @@
              "pageLength": 10,
               // set first column as a default sort by asc
              //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                "createdRow": function (row, data, index) {
+                /* 设置表格中的内容居中 */
+                $('td', row).attr("class", "text-center");
+            },
              "deferRender": true,
                 "ajax":{
-                 url:"{{ url_for('main.cuishou_by_shop') }}",
+                 url:"{{ url_for('main.saler_data') }}",
                     type:"POST",
-                    data:cuishou_data,
+                    data:date,
                     dataType:'json',
                  dataSrc:
                          function(data){
                            return data;
                          }
                },
-                "columns": [{ "sWidth": "12%","class":'text-center','data':'date'},
-                              { "sWidth": "10%","class":'text-center','data':'data_name' },
-                              { "sWidth": "9%","class":'text-center','data':'overtime_num' },
-                              { "sWidth": "9%","class":'text-center','data':'overtime_rate' },
-                              { "sWidth": "9%","class":'text-center','data':'overtime_amount' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_num'},
-                              { "sWidth": "9%","class":'text-center','data':'waicui_rate' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_amount' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_end_num' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_end_amount' },
-                              { "sWidth": "9%","class":'text-center','data':'diancui_waicui_rate' }],
-
+                "columns": [
+                              { "sWidth": "9%","class":'text-center','data':'date'},
+                                { "sWidth": "7%","class":'text-center','data':'data_name'},
+                                { "sWidth": "7%","class":'text-center','data':'shop_name'},
+                              { "sWidth": "7%","class":'text-center','data':'jinjian' },
+                              { "sWidth": "7%","class":'text-center','data':'apply_su_num' },
+                              { "sWidth": "7%","class":'text-center','data':'approve_success_num' },
+                              { "sWidth": "7%","class":'text-center','data':'approve_dely_rate' },
+                                { "sWidth": "8%","class":'text-center','data':'approve_rate'},
+                                { "sWidth": "8%","class":'text-center','data':'approve_retry'},
+                                { "sWidth": "7%","class":'text-center','data':'approve_retry_rate'},
+                                { "sWidth": "7%","class":'text-center','data':'waicui_num'},
+                                { "sWidth": "7%","class":'text-center','data':'waicui_amount'}],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
                             {
@@ -131,16 +136,15 @@
                                  "sLast": "末页"}}
             }
         );
-    });
 
-    function reload_cuishou() {
-         var cuishou_data_new ={
-        'date':$("#cuishou_shop_date").val(),
-        'end_date':$("#cuishou_shop_date_end").val(),
-             "shop_id":$("#shop_id").val()
+     function reload_apply() {
+         var date_new = {
+        'date':$("#saler_date").val(),
+        'end_date':$("#saler_date_end").val(),
+             'shop_id':$("#shop_id").val()
     };
-         $(document).ready(function () {
-        $('#shop_cuishou').DataTable(
+
+     var approve_detail = $('#saler_info').DataTable(
             {   "paging": true,
              "lengthChange": true,
              "searching": true,
@@ -152,29 +156,34 @@
              "pageLength": 10,
               // set first column as a default sort by asc
              //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
+                "createdRow": function (row, data, index) {
+                /* 设置表格中的内容居中 */
+                $('td', row).attr("class", "text-center");
+            },
              "deferRender": true,
                 "ajax":{
-                 url:"{{ url_for('main.cuishou_by_shop') }}",
+                 url:"{{ url_for('main.saler_data') }}",
                     type:"POST",
-                    data:cuishou_data_new,
+                    data:date_new,
                     dataType:'json',
                  dataSrc:
                          function(data){
                            return data;
                          }
                },
-                "columns": [{ "sWidth": "12%","class":'text-center','data':'date'},
-                              { "sWidth": "10%","class":'text-center','data':'data_name' },
-                              { "sWidth": "9%","class":'text-center','data':'overtime_num' },
-                              { "sWidth": "9%","class":'text-center','data':'overtime_rate' },
-                              { "sWidth": "9%","class":'text-center','data':'overtime_amount' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_num'},
-                              { "sWidth": "9%","class":'text-center','data':'waicui_rate' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_amount' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_end_num' },
-                              { "sWidth": "9%","class":'text-center','data':'waicui_end_amount' },
-                              { "sWidth": "9%","class":'text-center','data':'diancui_waicui_rate' }],
-
+                "columns": [
+                              { "sWidth": "9%","class":'text-center','data':'date'},
+                                { "sWidth": "7%","class":'text-center','data':'data_name'},
+                                { "sWidth": "7%","class":'text-center','data':'shop_name'},
+                              { "sWidth": "7%","class":'text-center','data':'jinjian' },
+                              { "sWidth": "7%","class":'text-center','data':'apply_su_num' },
+                              { "sWidth": "7%","class":'text-center','data':'approve_success_num' },
+                              { "sWidth": "7%","class":'text-center','data':'approve_dely_rate' },
+                                { "sWidth": "8%","class":'text-center','data':'approve_rate'},
+                                { "sWidth": "8%","class":'text-center','data':'approve_retry'},
+                                { "sWidth": "7%","class":'text-center','data':'approve_retry_rate'},
+                                { "sWidth": "7%","class":'text-center','data':'waicui_num'},
+                                { "sWidth": "7%","class":'text-center','data':'waicui_amount'}],
                 "pagingType":   "full_numbers",
                 "oLanguage":    //DataTable中文化 把提示语之类的换成中文
                             {
@@ -192,9 +201,7 @@
                                  "sLast": "末页"}}
             }
         );
-    });
-    }
+     }
 
 </script>
-
 {% endblock %}
